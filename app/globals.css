@@ -1,0 +1,173 @@
+@import "tailwindcss";
+
+/* ------------------------------
+   Global base styling
+------------------------------ */
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+}
+
+/* Dark fintech background + typography */
+body {
+  background-color: #020617; /* slate-950 */
+  color: #e2e8f0; /* slate-200 */
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
+    Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* ------------------------------
+   Headings & Typography
+------------------------------ */
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  font-weight: 700;
+  letter-spacing: -0.025em;
+  color: #ffffff;
+}
+
+p {
+  line-height: 1.8;
+  margin: 1.25rem 0;
+}
+
+/* Links */
+a {
+  text-decoration: none;
+  transition: color 0.15s ease, background-color 0.15s ease;
+}
+
+/* ------------------------------
+   Premium Article Styling
+   (Used by FCCS Blogs)
+------------------------------ */
+
+article.prose {
+  max-width: none;
+}
+
+/* Headings spacing */
+.prose h2 {
+  margin-top: 4rem;
+  margin-bottom: 1.5rem;
+  font-size: 1.875rem;
+  font-weight: 800;
+}
+
+.prose h3 {
+  margin-top: 2.5rem;
+  margin-bottom: 1rem;
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #38bdf8;
+}
+
+/* Lists */
+.prose ul,
+.prose ol {
+  margin: 1.5rem 0;
+  padding-left: 1.5rem;
+}
+
+.prose li {
+  margin: 0.5rem 0;
+}
+
+/* Horizontal rule */
+.prose hr {
+  border: none;
+  height: 1px;
+  background: linear-gradient(
+    to right,
+    transparent,
+    #1e293b,
+    transparent
+  );
+  margin: 4rem 0;
+}
+
+/* Blockquotes */
+.prose blockquote {
+  margin: 3rem 0;
+  padding: 1.5rem 2rem;
+  border-left: 4px solid #38bdf8;
+  background: rgba(56, 189, 248, 0.08);
+  border-radius: 0.75rem;
+  font-style: normal;
+  color: #e5e7eb;
+}
+
+/* ------------------------------
+   Callout Blocks (Architect / Tutor Notes)
+------------------------------ */
+
+.callout {
+  margin: 3.5rem 0;
+  padding: 1.75rem 2rem;
+  border-left: 4px solid #38bdf8;
+  background: rgba(56, 189, 248, 0.08);
+  border-radius: 0.75rem;
+  font-size: 0.95rem;
+  line-height: 1.75;
+  color: #e5e7eb;
+}
+
+.callout strong {
+  display: block;
+  margin-bottom: 0.5rem;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+}
+
+/* Architect-specific callout */
+.callout.architect {
+  border-left-color: #22c55e;
+  background: rgba(34, 197, 94, 0.08);
+}
+
+/* ------------------------------
+   Scrollbar styling (desktop)
+------------------------------ */
+
+::-webkit-scrollbar {
+  width: 7px;
+}
+
+::-webkit-scrollbar-track {
+  background: #0f172a; /* slate-900 */
+}
+
+::-webkit-scrollbar-thumb {
+  background: #64748b; /* slate-500 */
+  border-radius: 9999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #475569; /* slate-600 */
+}
+
+/* ------------------------------
+   Number input cleanup
+------------------------------ */
+
+input[type="number"]::-webkit-outer-spin-button,
+input[type="number"]::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  appearance: none;
+  margin: 0;
+}
+
+input[type="number"] {
+  -moz-appearance: textfield;
+  appearance: textfield;
+}
