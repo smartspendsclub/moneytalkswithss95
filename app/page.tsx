@@ -2,61 +2,74 @@
 
 export default function HomePage() {
   return (
-    <section className="space-y-10 md:space-y-12">
+    <section className="space-y-10 md:space-y-12 pt-6 md:pt-10">
       {/* HERO · PLANNING CONSOLE */}
-      <div className="rounded-3xl border border-emerald-400/25 bg-gradient-to-br from-slate-950 via-slate-950 to-slate-900 p-5 shadow-[0_0_60px_rgba(16,185,129,0.25)] md:p-7">
+      <div className="rounded-3xl border border-emerald-400/25 bg-linear-to-br from-slate-950 via-slate-950 to-slate-900 p-5 shadow-[0_0_40px_rgba(16,185,129,0.15)] md:p-7">
         <div className="grid gap-8 md:grid-cols-[3fr,2.4fr] md:items-center">
           {/* LEFT: INTRO + CTAS */}
           <div className="space-y-5">
-            <div className="inline-flex items-center gap-2 rounded-full border border-emerald-400/40 bg-emerald-500/10 px-3 py-1 text-[11px] font-medium text-emerald-100 shadow-inner shadow-emerald-500/40">
+            <div className="inline-flex items-center gap-2 rounded-full border border-emerald-400/40 bg-emerald-500/8 px-3 py-1 text-[11px] font-medium text-emerald-100 shadow-inner shadow-emerald-500/40">
               <span className="inline-block h-1.5 w-1.5 rounded-full bg-emerald-400 shadow-[0_0_10px_rgba(16,185,129,0.9)]" />
               MoneyTalks with SS · Financial Planning
             </div>
 
             <div className="relative">
-              {/* subtle radial glow behind heading */}
               <div className="pointer-events-none absolute -inset-x-10 -top-5 h-24 bg-radial from-emerald-500/25 via-transparent to-transparent blur-3xl" />
-              <h1 className="relative text-3xl font-semibold tracking-tight text-slate-50 sm:text-4xl lg:text-[2.7rem]">
+              <h1 className="relative text-3xl font-semibold tracking-[-0.015em] text-slate-50 sm:text-4xl lg:text-[2.7rem]">
                 A calm place to plan
-                <span className="block text-emerald-300">
+                <span className="block text-emerald-200">
                   your money, your goals, your future.
                 </span>
               </h1>
+
             </div>
 
+            {/* Emotional bridge */}
+            <p className="max-w-xl text-sm text-slate-300 sm:text-[15px]">
+              Understand where your money stands today — and what it can quietly
+              become over time, with clarity and confidence.
+            </p>
+
+            {/* Tighter intro */}
             <p className="max-w-xl text-sm text-slate-300 sm:text-[15px]">
               I&apos;m{" "}
               <span className="font-medium text-slate-100">
                 Sai Srinivas Guduru
               </span>
-              , a CFP aspirant. I build clean, transparent tools that help you
-              understand SIPs, investments, retirement and goal-based planning –
-              without pushing any product.
+              , a CFP aspirant. I focus on SIPs, long-term investing and
+              goal-based planning — without commissions, product pushing or
+              noise.
             </p>
 
             {/* CTAs */}
             <div className="flex flex-wrap gap-3">
               <a
                 href="/tools/sip"
-                className="group inline-flex items-center gap-2 rounded-full bg-emerald-500 px-5 py-2 text-sm font-semibold text-slate-950 shadow-lg shadow-emerald-500/40 transition hover:bg-emerald-400"
+                className="group inline-flex items-center gap-2 rounded-full bg-emerald-500 px-5 py-2 text-sm font-medium text-slate-950 shadow-lg shadow-emerald-500/30 transition hover:bg-emerald-400"
               >
-                <span>Open planning console</span>
+                <span>Start planning with SIP</span>
                 <span className="text-[11px] font-normal text-emerald-950/80 group-hover:text-emerald-950">
-                  (starts with SIP calculator)
+                  (simple · long-term · realistic)
                 </span>
               </a>
+
               <a
                 href="/contact"
                 className="inline-flex items-center gap-2 rounded-full border border-slate-500/60 bg-slate-900/60 px-5 py-2 text-sm font-medium text-slate-100 backdrop-blur transition hover:border-slate-300 hover:bg-slate-900"
               >
                 <span className="text-base">💬</span>
-                <span>Ask Sai a money question</span>
+                <span>Ask a planning question</span>
               </a>
             </div>
 
-            {/* STATUS STRIP: Focus / Style / Intent */}
+            {/* Micro trust */}
+            <p className="text-[11px] text-slate-400">
+              No commissions · No product selling · Education-first planning
+            </p>
+
+            {/* STATUS STRIP */}
             <div className="mt-2 flex flex-wrap gap-2">
-              <div className="inline-flex w-full items-center gap-3 rounded-full bg-slate-900/80 px-3 py-2 text-[11px] text-slate-300 shadow-inner shadow-black/40 ring-1 ring-slate-700/60">
+              <div className="inline-flex w-full items-center gap-3 rounded-full bg-slate-900/80 px-4 py-2.5 text-[11px] text-slate-300 shadow-inner shadow-black/40 ring-1 ring-slate-700/60">
                 <span className="relative flex h-6 w-6 items-center justify-center rounded-full bg-emerald-500/20">
                   <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 shadow-[0_0_10px_rgba(16,185,129,0.9)]" />
                 </span>
@@ -93,7 +106,7 @@ export default function HomePage() {
           </div>
 
           {/* RIGHT: SNAPSHOT / TRACKS */}
-          <div className="rounded-3xl border border-slate-700/70 bg-gradient-to-br from-slate-900/80 via-slate-950 to-slate-900/90 p-5 shadow-xl shadow-slate-950/60 md:p-6">
+          <div className="rounded-3xl border border-slate-700/70 bg-linear-to-br from-slate-900/80 via-slate-950 to-slate-900/90 p-5 shadow-xl shadow-slate-950/60 md:p-6">
             <div className="flex items-center justify-between gap-2">
               <div>
                 <p className="text-[11px] font-medium uppercase tracking-[0.18em] text-slate-500">
