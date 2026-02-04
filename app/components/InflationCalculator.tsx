@@ -44,7 +44,7 @@ export default function InflationCalculator() {
   }, [amountToday, years, inflation]);
 
   return (
-    <section className="overflow-hidden rounded-3xl border border-slate-700 bg-gradient-to-br from-slate-900 via-slate-950 to-slate-900 text-slate-50 shadow-2xl md:mx-2 lg:mx-4">
+    <section className="overflow-hidden rounded-3xl border border-slate-700 bg-linear-to-br from-slate-900 via-slate-950 to-slate-900 text-slate-50 shadow-2xl md:mx-2 lg:mx-4">
       {/* Header */}
       <div className="flex flex-wrap items-center justify-between gap-4 border-b border-white/10 px-6 py-8 md:px-10">
         <div className="space-y-2">

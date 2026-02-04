@@ -131,7 +131,7 @@ export default function NetWorthCalculator() {
   const netWorthPositive = netWorth >= 0;
 
   return (
-    <section className="overflow-hidden rounded-3xl border border-slate-800 bg-gradient-to-br from-slate-900 via-slate-950 to-slate-900 text-slate-50 shadow-xl shadow-slate-950/60">
+    <section className="overflow-hidden rounded-3xl border border-slate-800 bg-linear-to-br from-slate-900 via-slate-950 to-slate-900 text-slate-50 shadow-xl shadow-slate-950/60">
       {/* header */}
       <div className="flex flex-wrap items-start justify-between gap-4 border-b border-slate-800 px-5 py-4 md:px-8">
         <div className="space-y-1">

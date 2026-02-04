@@ -15,7 +15,7 @@ export default function BlogHome() {
         <div className="grid gap-6 md:grid-cols-2">
           {/* Oracle EPM */}
           <Link href="/blog/epm">
-            <article className="group rounded-3xl border border-sky-500/30 bg-gradient-to-br from-sky-900/40 to-slate-950 p-6 hover:-translate-y-1 transition">
+            <article className="group rounded-3xl border border-sky-500/30 bg-linear-to-br from-sky-900/40 to-slate-950 p-6 hover:-translate-y-1 transition">
               <span className="text-[11px] uppercase text-sky-300 tracking-widest">Oracle EPM Journal</span>
               <h2 className="mt-2 text-xl font-semibold text-slate-50">
                 Architect-grade Oracle EPM Mastery
@@ -30,7 +30,7 @@ export default function BlogHome() {
 
           {/* Financial Planning */}
           <Link href="/blog/financial-planning">
-            <article className="group rounded-3xl border border-emerald-500/30 bg-gradient-to-br from-emerald-900/40 to-slate-950 p-6 hover:-translate-y-1 transition">
+            <article className="group rounded-3xl border border-emerald-500/30 bg-linear-to-br from-emerald-900/40 to-slate-950 p-6 hover:-translate-y-1 transition">
               <span className="text-[11px] uppercase text-emerald-300 tracking-widest">Financial Planning Journal</span>
               <h2 className="mt-2 text-xl font-semibold text-slate-50">
                 Calm Thinking About Money — Not Products

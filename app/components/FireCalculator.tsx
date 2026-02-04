@@ -152,7 +152,7 @@ const showAcceleration =
 
 
   return (
-    <section className="overflow-hidden rounded-3xl border border-slate-200 bg-gradient-to-br from-slate-900 via-slate-950 to-slate-900 text-slate-50 text-base shadow-xl shadow-slate-900/30 md:mx-2 lg:mx-4">
+    <section className="overflow-hidden rounded-3xl border border-slate-200 bg-linear-to-br from-slate-900 via-slate-950 to-slate-900 text-slate-50 text-base shadow-xl shadow-slate-900/30 md:mx-2 lg:mx-4">
       {/* Header */}
       <div className="flex flex-wrap items-center justify-between gap-3 border-b border-white/10 px-5 py-4 md:px-8">
         <div className="space-y-1">
@@ -313,7 +313,7 @@ const showAcceleration =
               </div>
               <div className="h-2 w-full rounded-full bg-slate-800 overflow-hidden">
                 <div
-                  className="h-full rounded-full bg-gradient-to-r from-purple-400 to-emerald-400"
+                  className="h-full rounded-full bg-linear-to-r from-purple-400 to-emerald-400"
                   style={{ width: `${fireProgress}%` }}
                 />
               </div>

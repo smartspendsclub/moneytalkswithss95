@@ -29,7 +29,7 @@ export default function Navbar() {
           href="/"
           className="flex items-baseline gap-1 text-xl font-semibold tracking-tight"
         >
-          <span className="bg-gradient-to-r from-emerald-300 via-emerald-400 to-sky-300 bg-clip-text text-transparent">
+          <span className="bg-linear-to-r from-emerald-300 via-emerald-400 to-sky-300 bg-clip-text text-transparent">
             MoneyTalks
           </span>
           <span className="text-[13px] font-medium text-emerald-200/80">
@@ -51,7 +51,7 @@ export default function Navbar() {
                 href={link.href}
                 className={`rounded-full px-3.5 py-1.5 transition ${
                   active
-                    ? "bg-gradient-to-r from-emerald-400 to-emerald-500 text-slate-950 shadow-md shadow-emerald-500/40"
+                    ? "bg-linear-to-r from-emerald-400 to-emerald-500 text-slate-950 shadow-md shadow-emerald-500/40"
                     : "text-slate-300 hover:bg-emerald-500/10 hover:text-emerald-200"
                 }`}
               >
@@ -104,7 +104,7 @@ export default function Navbar() {
                   href={link.href}
                   className={`rounded-xl px-3 py-2 transition ${
                     active
-                      ? "bg-gradient-to-r from-emerald-400 to-emerald-500 text-slate-950"
+                      ? "bg-linear-to-r from-emerald-400 to-emerald-500 text-slate-950"
                       : "text-slate-300 hover:bg-emerald-500/10 hover:text-emerald-200"
                   }`}
                 >

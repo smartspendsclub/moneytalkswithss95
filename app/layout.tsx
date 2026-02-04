@@ -22,7 +22,7 @@ export default function RootLayout({
         <div className="pointer-events-none fixed inset-0 -z-10">
           <div className="absolute -left-24 top-0 h-64 w-64 rounded-full bg-emerald-500/10 blur-3xl" />
           <div className="absolute right-0 top-32 h-72 w-72 rounded-full bg-sky-500/10 blur-3xl" />
-          <div className="absolute inset-x-0 bottom-0 h-64 bg-gradient-to-t from-slate-950 via-slate-950/80 to-transparent" />
+          <div className="absolute inset-x-0 bottom-0 h-64 bg-linear-to-t from-slate-950 via-slate-950/80 to-transparent" />
         </div>
 
         <Navbar />

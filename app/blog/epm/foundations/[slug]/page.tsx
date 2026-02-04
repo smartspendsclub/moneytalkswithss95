@@ -114,7 +114,7 @@ export default function ArticlePage({ params }: { params: Promise<{ slug: string
         </article>
 
         {/* RE-USABLE FOOTER */}
-        <div className="mt-32 p-10 rounded-3xl border border-gray-800 bg-gradient-to-br from-gray-900/50 to-transparent flex flex-col md:flex-row justify-between items-center gap-8">
+        <div className="mt-32 p-10 rounded-3xl border border-gray-800 bg-linear-to-br from-gray-900/50 to-transparent flex flex-col md:flex-row justify-between items-center gap-8">
           <div className="text-center md:text-left">
             <h4 className="text-white font-bold text-2xl mb-2">Ready for the next lesson?</h4>
             <p className="text-gray-500">Continue your journey toward becoming an EPM Architect.</p>
