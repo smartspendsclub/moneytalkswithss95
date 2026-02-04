@@ -115,21 +115,26 @@ export default function LumpsumCalculator() {
       id="lumpsum-tool-root"
       className="mx-auto max-w-6xl space-y-6 rounded-2xl bg-slate-950/60 p-5 shadow-2xl shadow-sky-500/20 ring-1 ring-slate-800"
     >
-      <header className="space-y-2">
-        <p className="text-[11px] uppercase tracking-[0.15em] text-sky-400">
-          One-time investment · Growth projection
-        </p>
-        <div className="flex flex-wrap items-end justify-between gap-2">
-          <div>
+      <header className="pb-4">
+        <div className="flex items-center justify-between">
+          {/* LEFT */}
+          <div className="space-y-1">
+            <p className="text-[11px] uppercase tracking-[0.15em] text-sky-400">
+              One-time investment · Growth projection
+            </p>
+
             <h1 className="text-xl font-semibold text-slate-50">
               Lumpsum Investment Projection
             </h1>
-            <p className="text-xs text-slate-400">
-              See how a one-time investment can grow over time at
-              different return assumptions.
+
+            <p className="text-xs text-slate-400 max-w-xl">
+              See how a one-time investment can grow over time at different
+              return assumptions.
             </p>
           </div>
-          <div className="text-right text-xs text-emerald-300">
+
+          {/* RIGHT */}
+          <div className="text-right">
             <p className="text-[11px] uppercase tracking-[0.15em] text-emerald-400">
               Projected value
             </p>
@@ -275,7 +280,7 @@ export default function LumpsumCalculator() {
 
         {/* Visual */}
         <div className="space-y-3 rounded-xl bg-slate-950/60 p-4 ring-1 ring-slate-800">
-          <p className="text-xs font-medium text-slate-100">
+          <p className="text-sm font-medium text-slate-100">
             How much is principal vs growth?
           </p>
           <div className="flex items-center gap-4">
@@ -315,7 +320,7 @@ export default function LumpsumCalculator() {
               />
             </div>
           </div>
-          <p className="text-[10px] text-slate-400">
+          <p className="text-[11px] text-slate-400">
             The blue portion is your initial capital. The green portion
             is what the market adds on top over the chosen time period.
           </p>
@@ -325,10 +330,10 @@ export default function LumpsumCalculator() {
       {/* Scenario comparison */}
       <section className="space-y-3 rounded-xl bg-slate-950/60 p-4 ring-1 ring-slate-800">
         <div className="flex flex-wrap items-baseline justify-between gap-2">
-          <p className="text-xs font-medium text-slate-100">
+          <p className="text-base font-medium text-slate-100">
             Scenario comparison
           </p>
-          <p className="text-[10px] text-slate-400">
+          <p className="text-sm text-slate-400">
             See how the final value changes for slightly lower / higher
             returns.
           </p>
@@ -339,16 +344,16 @@ export default function LumpsumCalculator() {
               key={s.label}
               className="space-y-1 rounded-lg bg-slate-950/80 p-3 ring-1 ring-slate-800"
             >
-              <p className="text-[11px] font-semibold text-slate-50">
+              <p className="text-sm font-semibold text-slate-50">
                 {s.label}
               </p>
-              <p className="text-[10px] text-slate-400">
+              <p className="text-xs text-slate-400">
                 Return:{' '}
                 <span className="font-medium text-sky-300">
                   {s.rate}% p.a.
                 </span>
               </p>
-              <p className="text-[11px] text-slate-300">
+              <p className="text-sm text-slate-300">
                 Projected value:{' '}
                 <span className="font-semibold text-emerald-300">
                   ₹ {formatNumber(s.corpus)}
@@ -360,16 +365,45 @@ export default function LumpsumCalculator() {
       </section>
 
       {/* Footer actions */}
+      {/* Footer guidance */}
       <section className="space-y-4 rounded-xl bg-slate-950/60 p-4 ring-1 ring-slate-800">
+        {/* Disclaimer */}
         <p className="text-[11px] text-slate-400">
-          This is an illustration only. Real returns move around and may
-          not follow a straight line.
+          This is an educational illustration, not a guarantee. Actual market returns
+          fluctuate and may be higher or lower than shown here.
         </p>
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <p className="text-[10px] text-slate-500">
-            Use this as a planning guide. Revisit your numbers when
-            markets or your own situation change.
+
+        {/* Guidance */}
+        <div className="grid gap-3 md:grid-cols-2">
+          <div>
+            <p className="text-xs font-medium text-slate-200">
+              When a lumpsum investment works well
+            </p>
+            <ul className="mt-1 list-disc pl-4 text-[11px] text-slate-400 space-y-0.5">
+              <li>You have surplus capital and a long-term horizon</li>
+              <li>You can stay invested through market ups and downs</li>
+              <li>Your asset allocation matches your risk comfort</li>
+            </ul>
+          </div>
+
+          <div>
+            <p className="text-xs font-medium text-slate-200">
+              Things to keep in mind
+            </p>
+            <ul className="mt-1 list-disc pl-4 text-[11px] text-slate-400 space-y-0.5">
+              <li>Markets can be volatile in the short term</li>
+              <li>Large investments benefit from diversification</li>
+              <li>Review your plan when goals or income change</li>
+            </ul>
+          </div>
+        </div>
+
+        {/* Actions */}
+        <div className="flex flex-wrap items-center justify-between gap-3 pt-2 border-t border-slate-800">
+          <p className="text-[11px] text-slate-400">
+            Use this as a planning guide and revisit it periodically.
           </p>
+
           <div className="flex flex-wrap gap-2">
             <button
               type="button"
@@ -388,6 +422,7 @@ export default function LumpsumCalculator() {
           </div>
         </div>
       </section>
+
     </div>
   );
 }
@@ -418,12 +453,12 @@ function ControlBlock({
     >
       <div className="flex items-center justify-between gap-3">
         <div>
-          <p className="text-xs font-medium text-slate-100">
+          <p className="text-sm font-medium text-slate-100">
             {label}
           </p>
-          <p className="text-[11px] text-slate-400">{hint}</p>
+          <p className="text-xs text-slate-300">{hint}</p>
         </div>
-        <p className="text-[11px] font-medium text-sky-200">
+        <p className="text-xs font-medium text-sky-200">
           {valueLabel}
         </p>
       </div>
@@ -447,11 +482,11 @@ function LegendItem({
     <div className="flex items-start gap-2">
       <span className={`mt-[3px] h-2.5 w-2.5 rounded-full ${color}`} />
       <div>
-        <p className="text-[11px] font-medium text-slate-100">
+        <p className="text-sm font-medium text-slate-100">
           {label}
         </p>
-        <p className="text-[11px] text-slate-300">{value}</p>
-        <p className="text-[10px] text-slate-500">{percent}</p>
+        <p className="text-xs text-slate-300">{value}</p>
+        <p className="text-[11px] text-slate-500">{percent}</p>
       </div>
     </div>
   );

@@ -1,21 +1,26 @@
-// app/components/RetirementCalculator.tsx
 'use client';
 
 import React, { useMemo, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { downloadComponentPdf } from '@/lib/pdf-utils';
 import RetirementPdfReport from '@/components/RetirementPdfReport';
 
+/* ---------------- utils ---------------- */
+
 function formatNumber(num: number | undefined) {
-  if (!num || Number.isNaN(num)) return '0';
+  if (num === undefined || Number.isNaN(num)) return '0';
   return num.toLocaleString('en-IN', { maximumFractionDigits: 0 });
 }
 
-function stripLeadingZeros(value: string) {
-  if (!value) return '';
-  return value.replace(/^0+(?=\d)/, '');
+function parseNumber(val: string) {
+  const clean = val.replace(/[^0-9.]/g, '');
+  if (clean === '') return 0;
+  const n = Number(clean);
+  return Number.isNaN(n) ? 0 : n;
 }
 
-// very simplified retirement corpus estimate
+/* ---------------- calculation ---------------- */
+
 function retirementCorpus(
   monthlyExpenseToday: number,
   yearsToRetirement: number,
@@ -32,7 +37,7 @@ function retirementCorpus(
   const realReturn = (1 + r) / (1 + infl) - 1;
   const n = yearsAfterRetirement;
 
-  if (realReturn <= 0) {
+  if (Math.abs(realReturn) < 0.0001) {
     return expenseAtRetirement * 12 * n;
   }
 
@@ -40,21 +45,54 @@ function retirementCorpus(
   return (annual * (1 - Math.pow(1 + realReturn, -n))) / realReturn;
 }
 
+/* -------- NEW: Required SIP calculation -------- */
+
+function calculateRequiredSip(
+  targetCorpus: number,
+  years: number,
+  expectedReturn: number
+) {
+  const n = years * 12;
+  const rMonthly = expectedReturn / 12 / 100;
+
+  if (n <= 0) return 0;
+
+  if (rMonthly > 0) {
+    return (
+      targetCorpus /
+      ((((1 + rMonthly) ** n - 1) / rMonthly) * (1 + rMonthly))
+    );
+  } else {
+    return targetCorpus / n;
+  }
+}
+
 type Scenario = {
   label: string;
   inflation: number;
   returnRate: number;
   corpus: number;
+  note: string;
 };
 
+/* ---------------- component ---------------- */
+
 export default function RetirementCalculator() {
+  const router = useRouter();
+
   const [monthlyExpense, setMonthlyExpense] = useState(60000);
   const [yearsToRetirement, setYearsToRetirement] = useState(20);
   const [yearsAfterRetirement, setYearsAfterRetirement] = useState(25);
   const [inflation, setInflation] = useState(6);
   const [postReturn, setPostReturn] = useState(8);
 
-  const { corpus, scenarios } = useMemo(() => {
+  const [monthlyStr, setMonthlyStr] = useState('60000');
+  const [yToStr, setYToStr] = useState('20');
+  const [yAfterStr, setYAfterStr] = useState('25');
+  const [inflStr, setInflStr] = useState('6');
+  const [returnStr, setReturnStr] = useState('8');
+
+  const { corpus, expenseAtRetirement, scenarios } = useMemo(() => {
     const baseCorpus = retirementCorpus(
       monthlyExpense,
       yearsToRetirement,
@@ -62,6 +100,9 @@ export default function RetirementCalculator() {
       inflation,
       postReturn
     );
+
+    const expenseAtRet =
+      monthlyExpense * Math.pow(1 + inflation / 100, yearsToRetirement);
 
     const sc: Scenario[] = [
       {
@@ -75,28 +116,38 @@ export default function RetirementCalculator() {
           inflation + 1,
           postReturn - 1
         ),
+        note:
+          'Higher inflation and lower returns. Useful if markets underperform or expenses rise faster than expected.',
       },
       {
         label: 'Base case',
         inflation,
         returnRate: postReturn,
         corpus: baseCorpus,
+        note:
+          'Balanced assumptions based on long-term averages. Most realistic planning estimate.',
       },
       {
         label: 'Optimistic',
-        inflation: inflation - 1,
+        inflation: Math.max(0, inflation - 1),
         returnRate: postReturn + 1,
         corpus: retirementCorpus(
           monthlyExpense,
           yearsToRetirement,
           yearsAfterRetirement,
-          inflation - 1,
+          Math.max(0, inflation - 1),
           postReturn + 1
         ),
+        note:
+          'Lower inflation and better portfolio returns. Represents a favourable environment.',
       },
     ];
 
-    return { corpus: baseCorpus, scenarios: sc };
+    return {
+      corpus: baseCorpus,
+      expenseAtRetirement: expenseAtRet,
+      scenarios: sc,
+    };
   }, [
     monthlyExpense,
     yearsToRetirement,
@@ -105,21 +156,23 @@ export default function RetirementCalculator() {
     postReturn,
   ]);
 
-  const handleShare = async () => {
-    try {
-      await navigator.clipboard.writeText(window.location.href);
-      alert(
-        'Link copied. You can paste and share this retirement plan.'
-      );
-    } catch {
-      alert(
-        'Unable to copy the link. You can share this page URL manually.'
-      );
-    }
+  /* ---------------- navigation ---------------- */
+
+  const goToSIP = () => {
+  router.push(
+    `/sip-calculator?target=${corpus}&years=${yearsToRetirement}&return=${postReturn}`
+    );
   };
 
+  const goToGoalPlanner = () => {
+      router.push(
+      `/goal-planner?goalType=retirement&goal=Retirement&target=${corpus}&years=${yearsToRetirement}&return=${postReturn}`
+    );
+  };
+
+
+
   const handleDownloadPdf = async () => {
-    // Use Component + props + filename (same pattern as SIP & Lumpsum)
     await downloadComponentPdf(
       RetirementPdfReport,
       {
@@ -129,416 +182,300 @@ export default function RetirementCalculator() {
         inflation,
         postReturn,
         corpus,
-        scenarios: scenarios.map((s) => ({
-          label: s.label,
-          inflation: s.inflation,
-          returnRate: s.returnRate,
-          corpus: s.corpus,
-        })),
+        scenarios,
       },
       'Retirement_plan.pdf'
     );
   };
 
-  const monthlyDisplay =
-    monthlyExpense === 0 ? '' : String(monthlyExpense);
-  const yToDisplay =
-    yearsToRetirement === 0 ? '' : String(yearsToRetirement);
-  const yAfterDisplay =
-    yearsAfterRetirement === 0 ? '' : String(yearsAfterRetirement);
-  const inflDisplay = inflation === 0 ? '' : String(inflation);
-  const returnDisplay = postReturn === 0 ? '' : String(postReturn);
+  /* ---------------- UI ---------------- */
 
   return (
-    <div
-      id="retirement-tool-root"
-      className="mx-auto max-w-6xl space-y-6 rounded-2xl bg-slate-950/60 p-5 shadow-2xl shadow-sky-500/20 ring-1 ring-slate-800"
-    >
-      <header className="space-y-2">
-        <p className="text-[11px] uppercase tracking-[0.15em] text-sky-400">
-          Retirement · Corpus planning
+    <div className="mx-auto max-w-6xl space-y-8 rounded-3xl bg-linear-to-b from-slate-950/80 to-slate-900/70 p-8 shadow-2xl shadow-sky-900/20 ring-1 ring-slate-800 backdrop-blur-xl">
+      
+      {/* HEADER */}
+      <header className="space-y-4 border-b border-slate-800 pb-6">
+        <p className="text-xs uppercase tracking-[0.25em] text-sky-400/80">
+          Retirement · Corpus Planning
         </p>
-        <div className="flex flex-wrap items-end justify-between gap-2">
+
+        <div className="flex flex-wrap items-end justify-between gap-4">
           <div>
-            <h1 className="text-xl font-semibold text-slate-50">
+            <h1 className="text-3xl font-semibold tracking-tight text-slate-50">
               Retirement Corpus Planner
             </h1>
-            <p className="text-xs text-slate-400">
-              Estimate the lump sum you may need at retirement to
-              support your desired lifestyle.
+            <p className="mt-2 text-base text-slate-400 max-w-xl">
+              Estimate the lump sum required to sustain your lifestyle in
+              retirement, adjusted for inflation and portfolio returns.
             </p>
           </div>
-          <div className="text-right text-xs text-emerald-300">
-            <p className="text-[11px] uppercase tracking-[0.15em] text-emerald-400">
-              Target corpus at retirement
+
+          <div className="text-right">
+            <p className="text-xs uppercase tracking-[0.2em] text-sky-400/80">
+              Target Corpus
             </p>
-            <p className="text-lg font-semibold text-emerald-300">
+            <p className="mt-1 text-2xl font-semibold text-sky-300">
               ₹ {formatNumber(corpus)}
             </p>
-            <p className="text-[11px] text-slate-400">
-              At age in {yearsToRetirement} years (approx).
+            <p className="text-xs text-slate-500">
+              In {yearsToRetirement} years (approx.)
             </p>
           </div>
         </div>
       </header>
 
-      <div className="grid gap-4 lg:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)]">
-        {/* Inputs */}
-        <div className="space-y-4">
-          <ControlBlock
-            label="Monthly expenses today"
-            hint="All essential expenses for your household in today’s terms."
-            valueLabel={`₹ ${formatNumber(monthlyExpense)}`}
-            accent="sky"
+      {/* GRID */}
+      <div className="grid gap-6 lg:grid-cols-[1.3fr_1fr]">
+
+        {/* LEFT INPUTS */}
+        <div className="space-y-5">
+          <ControlBlock 
+          label="Monthly expenses today"
+          value={`₹ ${formatNumber(monthlyExpense)}`}
           >
-            <div className="flex items-center gap-3">
-              <input
-                type="range"
-                min={20000}
-                max={300000}
-                step={5000}
-                value={monthlyExpense}
-                onChange={(e) =>
-                  setMonthlyExpense(
-                    parseInt(e.target.value || '0') || 0
-                  )
-                }
-                className="h-1.5 w-full cursor-pointer rounded-full bg-slate-700 accent-sky-400"
-              />
-              <div className="relative w-32">
-                <span className="pointer-events-none absolute left-2 top-1.5 text-[11px] text-slate-400">
-                  ₹
-                </span>
-                <input
-                  type="number"
-                  className="w-full rounded-md border border-slate-600 bg-slate-900 px-5 py-1 text-xs text-slate-50 outline-none ring-0 focus:border-sky-400"
-                  value={monthlyDisplay}
-                  onChange={(e) => {
-                    const cleaned = stripLeadingZeros(
-                      e.target.value
-                    );
-                    if (cleaned === '') {
-                      setMonthlyExpense(0);
-                      return;
-                    }
-                    const val = parseInt(cleaned, 10);
-                    setMonthlyExpense(
-                      Number.isNaN(val) ? 0 : val
-                    );
-                  }}
-                />
-              </div>
-            </div>
+            <RangeWithInput
+              value={monthlyExpense}
+              display={monthlyStr}
+              setDisplay={setMonthlyStr}
+              onChange={setMonthlyExpense}
+              min={1000}
+              max={300000}
+            />
           </ControlBlock>
 
-          <ControlBlock
-            label="Years until retirement"
-            hint="Roughly how many years you have to prepare."
-            valueLabel={`${yearsToRetirement} years`}
-            accent="emerald"
+          <ControlBlock 
+          label="Years until retirement"
+          value={`${yearsToRetirement} years`}
           >
-            <div className="flex items-center gap-3">
-              <input
-                type="range"
-                min={1}
-                max={40}
-                value={yearsToRetirement}
-                onChange={(e) =>
-                  setYearsToRetirement(
-                    parseInt(e.target.value || '0') || 0
-                  )
-                }
-                className="h-1.5 w-full cursor-pointer rounded-full bg-slate-700 accent-emerald-400"
-              />
-              <input
-                type="number"
-                min={1}
-                max={40}
-                className="w-20 rounded-md border border-slate-600 bg-slate-900 px-3 py-1 text-xs text-slate-50 outline-none focus:border-emerald-400"
-                value={yToDisplay}
-                onChange={(e) => {
-                  const cleaned = stripLeadingZeros(
-                    e.target.value
-                  );
-                  if (cleaned === '') {
-                    setYearsToRetirement(0);
-                    return;
-                  }
-                  const v = parseInt(cleaned, 10);
-                  setYearsToRetirement(
-                    Number.isNaN(v) ? 0 : v
-                  );
-                }}
-              />
-            </div>
+            <RangeWithInput
+              value={yearsToRetirement}
+              display={yToStr}
+              setDisplay={setYToStr}
+              onChange={setYearsToRetirement}
+              min={1}
+              max={60}
+            />
           </ControlBlock>
 
-          <ControlBlock
-            label="Years in retirement (life after)"
-            hint="How long you want your money to last after retirement."
-            valueLabel={`${yearsAfterRetirement} years`}
-            accent="emerald"
+          <ControlBlock 
+          label="Years in retirement"
+          value={`${yearsAfterRetirement} years`}
           >
-            <div className="flex items-center gap-3">
-              <input
-                type="range"
-                min={10}
-                max={40}
-                value={yearsAfterRetirement}
-                onChange={(e) =>
-                  setYearsAfterRetirement(
-                    parseInt(e.target.value || '0') || 0
-                  )
-                }
-                className="h-1.5 w-full cursor-pointer rounded-full bg-slate-700 accent-emerald-400"
-              />
-              <input
-                type="number"
-                min={5}
-                max={50}
-                className="w-20 rounded-md border border-slate-600 bg-slate-900 px-3 py-1 text-xs text-slate-50 outline-none focus:border-emerald-400"
-                value={yAfterDisplay}
-                onChange={(e) => {
-                  const cleaned = stripLeadingZeros(
-                    e.target.value
-                  );
-                  if (cleaned === '') {
-                    setYearsAfterRetirement(0);
-                    return;
-                  }
-                  const v = parseInt(cleaned, 10);
-                  setYearsAfterRetirement(
-                    Number.isNaN(v) ? 0 : v
-                  );
-                }}
-              />
-            </div>
+            <RangeWithInput
+              value={yearsAfterRetirement}
+              display={yAfterStr}
+              setDisplay={setYAfterStr}
+              onChange={setYearsAfterRetirement}
+              min={5}
+              max={50}
+            />
           </ControlBlock>
 
-          <ControlBlock
-            label="Inflation (per year)"
-            hint="How fast you expect expenses to grow."
-            valueLabel={`${inflation}%`}
-            accent="amber"
+          <ControlBlock 
+          label="Inflation rate (%)"
+          value={`${inflation}%`}
           >
-            <div className="flex items-center gap-3">
-              <input
-                type="range"
-                min={3}
-                max={10}
-                step={0.5}
-                value={inflation}
-                onChange={(e) =>
-                  setInflation(
-                    parseFloat(e.target.value || '0') || 0
-                  )
-                }
-                className="h-1.5 w-full cursor-pointer rounded-full bg-slate-700 accent-amber-400"
-              />
-              <input
-                type="number"
-                min={1}
-                max={15}
-                step={0.5}
-                className="w-20 rounded-md border border-slate-600 bg-slate-900 px-3 py-1 text-xs text-slate-50 outline-none focus:border-amber-400"
-                value={inflDisplay}
-                onChange={(e) => {
-                  const cleaned = stripLeadingZeros(
-                    e.target.value
-                  );
-                  if (cleaned === '') {
-                    setInflation(0);
-                    return;
-                  }
-                  const v = parseFloat(cleaned);
-                  setInflation(
-                    Number.isNaN(v) ? inflation : v
-                  );
-                }}
-              />
-            </div>
+            <RangeWithInput
+              value={inflation}
+              display={inflStr}
+              setDisplay={setInflStr}
+              onChange={setInflation}
+              min={3}
+              max={10}
+              step={0.5}
+            />
           </ControlBlock>
 
-          <ControlBlock
-            label="Return during retirement"
-            hint="Net return from your retirement portfolio after expenses."
-            valueLabel={`${postReturn}% p.a.`}
-            accent="amber"
+          <ControlBlock 
+          label="Return during retirement (%)"
+          value={`${postReturn}%`}
           >
-            <div className="flex items-center gap-3">
-              <input
-                type="range"
-                min={4}
-                max={12}
-                step={0.5}
-                value={postReturn}
-                onChange={(e) =>
-                  setPostReturn(
-                    parseFloat(e.target.value || '0') || 0
-                  )
-                }
-                className="h-1.5 w-full cursor-pointer rounded-full bg-slate-700 accent-amber-400"
-              />
-              <input
-                type="number"
-                min={1}
-                max={20}
-                step={0.5}
-                className="w-20 rounded-md border border-slate-600 bg-slate-900 px-3 py-1 text-xs text-slate-50 outline-none focus:border-amber-400"
-                value={returnDisplay}
-                onChange={(e) => {
-                  const cleaned = stripLeadingZeros(
-                    e.target.value
-                  );
-                  if (cleaned === '') {
-                    setPostReturn(0);
-                    return;
-                  }
-                  const v = parseFloat(cleaned);
-                  setPostReturn(
-                    Number.isNaN(v) ? postReturn : v
-                  );
-                }}
-              />
-            </div>
+            <RangeWithInput
+              value={postReturn}
+              display={returnStr}
+              setDisplay={setReturnStr}
+              onChange={setPostReturn}
+              min={4}
+              max={12}
+              step={0.5}
+            />
           </ControlBlock>
         </div>
 
-        {/* Explanation panel */}
-        <div className="space-y-3 rounded-xl bg-slate-950/60 p-4 ring-1 ring-slate-800">
-          <p className="text-xs font-medium text-slate-100">
-            What this corpus represents
-          </p>
-          <p className="text-[11px] text-slate-300">
-            This is an estimate of the amount you would need at
-            retirement so that, with the chosen inflation and return
-            assumptions, you can draw an inflation-linked income for{' '}
-            <span className="font-medium text-slate-50">
-              {yearsAfterRetirement} years
-            </span>{' '}
-            after you stop working.
-          </p>
-          <p className="text-[11px] text-slate-400">
-            It is not a perfect number, but a starting point for
-            planning your investments and checking if you&apos;re
-            broadly on track.
-          </p>
+        {/* RIGHT PANEL */}
+        <div className="rounded-2xl bg-linear-to-br from-slate-950/80 to-slate-900/70 p-6 ring-1 ring-slate-800 shadow-lg space-y-6">
+
+          <div>
+            <h3 className="text-lg font-semibold text-slate-50 mb-4">
+              What this corpus means for you
+            </h3>
+
+            <ul className="space-y-2 text-sm text-slate-300">
+              <li>• Monthly expense today: ₹ {formatNumber(monthlyExpense)}</li>
+              <li>
+                • Estimated monthly expense at retirement:{' '}
+                <span className="text-sky-300 font-medium">
+                  ₹ {formatNumber(expenseAtRetirement)}
+                </span>
+              </li>
+              <li>• Years until retirement: {yearsToRetirement}</li>
+              <li>• Years in retirement: {yearsAfterRetirement}</li>
+              <li>• Inflation assumed: {inflation}%</li>
+              <li>• Expected post-retirement return: {postReturn}%</li>
+            </ul>
+          </div>
+
+          <div className="border-t border-slate-800 pt-6 space-y-4">
+            <h4 className="text-base font-semibold text-slate-100">
+              How to reach this corpus
+            </h4>
+
+            <p className="text-sm text-slate-400">
+              Build ₹ {formatNumber(corpus)} in the next {yearsToRetirement} years
+              using disciplined investing.
+            </p>
+
+            <button
+              onClick={goToSIP}
+              className="w-full rounded-full border border-sky-500/60 px-4 py-2 text-sm text-sky-200 hover:bg-sky-500/10"
+            >
+              Calculate Monthly SIP
+            </button>
+          </div>
         </div>
       </div>
 
-      {/* Scenario comparison */}
-      <section className="space-y-3 rounded-xl bg-slate-950/60 p-4 ring-1 ring-slate-800">
-        <div className="flex flex-wrap items-baseline justify-between gap-2">
-          <p className="text-xs font-medium text-slate-100">
-            Scenario comparison
+      {/* SCENARIOS */}
+      <section className="rounded-2xl bg-linear-to-br from-slate-950/80 to-slate-900/60 p-6 ring-1 ring-slate-800 shadow-lg">
+        <div className="flex justify-between mb-6">
+          <p className="text-base font-semibold text-slate-100">
+            Scenario Comparison
           </p>
-          <p className="text-[10px] text-slate-400">
-            See how your target corpus changes with slightly different
-            inflation and returns.
+          <p className="text-xs text-slate-400">
+            Impact of inflation & returns
           </p>
         </div>
-        <div className="grid gap-3 md:grid-cols-3">
+
+        <div className="grid gap-5 md:grid-cols-3">
           {scenarios.map((s) => (
             <div
               key={s.label}
-              className="space-y-1 rounded-lg bg-slate-950/80 p-3 ring-1 ring-slate-800"
+              className="rounded-2xl bg-linear-to-br from-slate-950/80 to-slate-900/60 p-5 ring-1 ring-slate-800 shadow-lg hover:scale-[1.02] transition-all"
             >
-              <p className="text-[11px] font-semibold text-slate-50">
+              <p className="text-base font-medium text-slate-100">
                 {s.label}
               </p>
-              <p className="text-[10px] text-slate-400">
-                Inflation:{' '}
-                <span className="font-medium text-sky-300">
-                  {s.inflation}% p.a.
-                </span>
+              <p className="text-xs text-slate-400 mt-1">
+                Inflation {s.inflation}% · Return {s.returnRate}%
               </p>
-              <p className="text-[10px] text-slate-400">
-                Return:{' '}
-                <span className="font-medium text-emerald-300">
-                  {s.returnRate}% p.a.
-                </span>
+              <p className="mt-3 text-xl font-semibold text-sky-300">
+                ₹ {formatNumber(s.corpus)}
               </p>
-              <p className="text-[11px] text-slate-300">
-                Target corpus:{' '}
-                <span className="font-semibold text-emerald-300">
-                  ₹ {formatNumber(s.corpus)}
-                </span>
-              </p>
+              <p className="mt-3 text-xs text-slate-400">{s.note}</p>
             </div>
           ))}
         </div>
       </section>
 
-      {/* Footer actions */}
-      <section className="space-y-4 rounded-xl bg-slate-950/60 p-4 ring-1 ring-slate-800">
-        <p className="text-[11px] text-slate-400">
-          This is an educational projection, not a guarantee. Real-life
-          inflation, returns and spending can be higher or lower.
+      {/* FOOTER */}
+      <section className="flex justify-between items-center rounded-2xl bg-linear-to-r from-slate-950/80 to-slate-900/70 p-5 ring-1 ring-slate-800">
+        <p className="text-xs text-slate-400">
+          Review this plan periodically as income and goals evolve.
         </p>
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <p className="text-[10px] text-slate-500">
-            Revisit this plan once a year or when a major life event
-            occurs. Adjust the inputs as your income, expenses and
-            responsibilities change.
-          </p>
-          <div className="flex flex-wrap gap-2">
-            <button
-              type="button"
-              onClick={handleShare}
-              className="inline-flex items-center rounded-full border border-sky-500/70 bg-sky-500/10 px-3 py-1.5 text-[11px] font-medium text-sky-100 hover:bg-sky-500/20"
-            >
-              Share this result
-            </button>
-            <button
-              type="button"
-              onClick={handleDownloadPdf}
-              className="inline-flex items-center rounded-full border border-emerald-500/70 bg-emerald-500/10 px-3 py-1.5 text-[11px] font-medium text-emerald-100 hover:bg-emerald-500/20"
-            >
-              Download PDF
-            </button>
-          </div>
-        </div>
+        <button
+          onClick={handleDownloadPdf}
+          className="rounded-full border border-sky-500/60 px-5 py-2 text-sm text-sky-200 hover:bg-sky-500/10"
+        >
+          Download PDF
+        </button>
       </section>
     </div>
   );
 }
 
+/* ---------------- reusable ---------------- */
+
 function ControlBlock({
   label,
-  hint,
-  valueLabel,
-  accent,
+  value,
   children,
 }: {
   label: string;
-  hint: string;
-  valueLabel: string;
-  accent: 'amber' | 'emerald' | 'sky';
+  value?: string;
   children: React.ReactNode;
 }) {
-  const accentRing =
-    accent === 'amber'
-      ? 'ring-amber-500/40'
-      : accent === 'emerald'
-      ? 'ring-emerald-500/40'
-      : 'ring-sky-500/40';
+  return (
+    <div className="rounded-2xl bg-linear-to-br from-slate-950/70 to-slate-900/60 p-5 ring-1 ring-slate-800 shadow-inner">
+      
+      <div className="flex items-center justify-between mb-3">
+        <p className="text-sm font-medium text-slate-100">
+          {label}
+        </p>
+
+        {value && (
+          <span className="text-sm font-semibold text-sky-300">
+            {value}
+          </span>
+        )}
+      </div>
+
+      {children}
+    </div>
+  );
+}
+
+
+type RangeWithInputProps = {
+  value: number;
+  display: string;
+  setDisplay: (v: string) => void;
+  onChange: (v: number) => void;
+  min: number;
+  max: number;
+  step?: number;
+};
+
+function RangeWithInput({
+  value,
+  display,
+  setDisplay,
+  onChange,
+  min,
+  max,
+  step = 1,
+}: RangeWithInputProps) {
+  const handleBlur = () => {
+    const n = parseNumber(display);
+    const clamped = Math.max(min, Math.min(max, n));
+    setDisplay(String(clamped));
+    onChange(clamped);
+  };
 
   return (
-    <div
-      className={`space-y-2 rounded-xl bg-slate-950/60 p-3.5 ring-1 ${accentRing}`}
-    >
-      <div className="flex items-center justify-between gap-3">
-        <div>
-          <p className="text-xs font-medium text-slate-100">
-            {label}
-          </p>
-          <p className="text-[11px] text-slate-400">{hint}</p>
-        </div>
-        <p className="text-[11px] font-medium text-sky-200">
-          {valueLabel}
-        </p>
-      </div>
-      {children}
+    <div className="flex items-center gap-4">
+      <input
+        type="range"
+        min={min}
+        max={max}
+        step={step}
+        value={value}
+        onChange={(e) => {
+          const v = Number(e.target.value);
+          setDisplay(String(v));
+          onChange(v);
+        }}
+        className="w-full cursor-pointer accent-sky-400"
+      />
+      <input
+        type="text"
+        value={display}
+        onBlur={handleBlur}
+        onChange={(e) => {
+          setDisplay(e.target.value);
+          onChange(parseNumber(e.target.value));
+        }}
+        className="w-24 rounded-md border border-slate-700 bg-slate-900 px-3 py-1.5 text-sm text-slate-100 outline-none focus:border-sky-500"
+      />
     </div>
   );
 }

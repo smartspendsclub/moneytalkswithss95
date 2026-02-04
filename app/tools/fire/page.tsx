@@ -21,7 +21,7 @@ export default function FirePage() {
           </Link>
           <div className="space-y-1">
             <h1 className="text-xl font-semibold text-slate-50">
-              FIRE Timeline Estimator
+              FIRE Number Calculator
             </h1>
             <p className="text-xs text-slate-400">
               Combine your expenses, current corpus and monthly investing

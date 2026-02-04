@@ -2,8 +2,12 @@
 
 import React, { useMemo, useState } from 'react';
 
-function formatNumber(num: number | undefined) {
-  if (!num || Number.isNaN(num)) return '0';
+// =================================================================
+// 1. HELPERS
+// =================================================================
+
+function formatNumber(num?: number) {
+  if (num === undefined || num === null || Number.isNaN(num)) return '0';
   return num.toLocaleString('en-IN', { maximumFractionDigits: 0 });
 }
 
@@ -11,6 +15,10 @@ function stripLeadingZeros(v: string) {
   if (!v) return '';
   return v.replace(/^0+(?=\d)/, '');
 }
+
+// =================================================================
+// 2. MAIN CALCULATOR
+// =================================================================
 
 export default function InflationCalculator() {
   const [amountToday, setAmountToday] = useState(500000);
@@ -20,212 +28,215 @@ export default function InflationCalculator() {
   const result = useMemo(() => {
     const infl = inflation / 100;
     const futureCost = amountToday * Math.pow(1 + infl, years);
-    const doubleYears =
-      inflation > 0 ? Math.log(2) / Math.log(1 + infl) : Infinity;
+    const doubleYears = inflation > 0 ? Math.log(2) / Math.log(1 + infl) : Infinity;
 
-    return { futureCost, doubleYears };
+    // Generate yearly data for the table
+    const breakdown = [];
+    for (let i = 1; i <= years; i++) {
+      breakdown.push({
+        year: i,
+        futureValue: Math.round(amountToday * Math.pow(1 + infl, i)),
+        lossOfValue: Math.round(amountToday - (amountToday / Math.pow(1 + infl, i))),
+      });
+    }
+
+    return { futureCost, doubleYears, breakdown };
   }, [amountToday, years, inflation]);
 
-  const amountDisplay = amountToday === 0 ? '' : String(amountToday);
-  const yearsDisplay = years === 0 ? '' : String(years);
-  const inflationDisplay = inflation === 0 ? '' : String(inflation);
-
   return (
-    <section className="overflow-hidden rounded-3xl border border-slate-200 bg-gradient-to-br from-slate-900 via-slate-950 to-slate-900 text-slate-50 shadow-xl shadow-slate-900/30 md:mx-2 lg:mx-4">
-      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-white/10 px-5 py-4 md:px-8">
-        <div className="space-y-1">
-          <div className="inline-flex items-center gap-2 rounded-full bg-sky-500/15 px-3 py-1 text-[11px] font-medium text-sky-100 ring-1 ring-sky-400/60">
-            <span className="inline-block h-1.5 w-1.5 rounded-full bg-sky-400" />
-            Inflation · Future cost
+    <section className="overflow-hidden rounded-3xl border border-slate-700 bg-gradient-to-br from-slate-900 via-slate-950 to-slate-900 text-slate-50 shadow-2xl md:mx-2 lg:mx-4">
+      {/* Header */}
+      <div className="flex flex-wrap items-center justify-between gap-4 border-b border-white/10 px-6 py-8 md:px-10">
+        <div className="space-y-2">
+          <div className="inline-flex items-center gap-2 rounded-full bg-sky-500/20 px-4 py-1.5 text-xs font-bold text-sky-300 ring-1 ring-sky-400/30 uppercase tracking-wide">
+            <span className="inline-block h-2 w-2 rounded-full bg-sky-400 animate-pulse" />
+            Inflation · Future Value
           </div>
-          <h2 className="text-lg font-semibold md:text-xl">
-            Inflation Impact Calculator
-          </h2>
-          <p className="text-[11px] text-slate-300 md:text-xs">
-            See how today’s amount grows in rupee terms if prices rise
-            every year.
+          <h2 className="text-2xl font-bold tracking-tight md:text-3xl">Inflation Impact</h2>
+          <p className="text-sm text-slate-300 md:text-base max-w-md">
+            Calculate the future cost of your goals and see how inflation erodes your wealth over time.
           </p>
         </div>
 
-        <div className="flex flex-col items-end text-right text-[11px] text-slate-300 md:text-xs">
-          <span className="text-slate-400">Future cost estimate</span>
-          <span className="text-base font-semibold text-emerald-300 md:text-lg">
-            ₹ {formatNumber(result.futureCost)}
+        <div className="flex flex-col items-end text-right">
+          <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">Future Cost</span>
+          <span className="text-3xl font-bold text-emerald-400 md:text-4xl transition-all duration-300 ease-out">
+            ₹{formatNumber(result.futureCost)}
           </span>
-          <span className="text-[11px] text-slate-400">
+          <p className="text-sm font-medium text-slate-400 mt-1">
             In {years} years at {inflation}% inflation
-          </span>
+          </p>
         </div>
       </div>
 
-      <div className="grid gap-6 border-t border-white/5 bg-slate-950/40 px-5 py-5 backdrop-blur md:grid-cols-[3fr,2.4fr] md:px-8 md:py-7">
-        {/* Left – inputs */}
-        <div className="space-y-5 rounded-2xl bg-slate-900/60 p-4 ring-1 ring-white/5 md:p-5">
+      <div className="grid gap-8 border-t border-white/5 bg-slate-950/40 px-6 py-8 backdrop-blur-md md:grid-cols-[1.1fr,1fr] md:px-10">
+        {/* LEFT: Inputs */}
+        <div className="space-y-6">
           <ControlBlock
-            label="Cost today"
-            hint="Approximate amount in today’s terms."
+            label="Cost in today's terms"
+            hint="Amount required for the goal today."
             valueLabel={`₹ ${formatNumber(amountToday)}`}
+            accent="sky"
           >
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-4 mt-2">
               <input
-                type="range"
-                min={50000}
-                max={10000000}
-                step={25000}
+                type="range" min={50000} max={10000000} step={50000}
                 value={amountToday}
-                onChange={(e) =>
-                  setAmountToday(parseInt(e.target.value || '0') || 0)
-                }
-                className="h-1.5 w-full cursor-pointer rounded-full bg-slate-700 accent-sky-400"
+                onChange={(e) => setAmountToday(Number(e.target.value))}
+                className="h-2 w-full cursor-pointer rounded-full bg-slate-800 accent-sky-400"
               />
               <input
                 type="number"
-                className="w-32 rounded-lg border border-slate-600 bg-slate-900 px-2 py-1.5 text-sm text-slate-50 outline-none ring-sky-500/40 focus:border-sky-400 focus:ring"
-                value={amountDisplay}
-                onChange={(e) => {
-                  const cleaned = stripLeadingZeros(e.target.value);
-                  if (!cleaned) {
-                    setAmountToday(0);
-                    return;
-                  }
-                  const num = parseInt(cleaned, 10);
-                  setAmountToday(Number.isNaN(num) ? 0 : num);
-                }}
+                className="w-32 rounded-lg border-2 border-slate-700 bg-slate-900 px-3 py-2 text-lg font-bold text-white outline-none focus:border-sky-500"
+                value={amountToday === 0 ? '' : amountToday}
+                onChange={(e) => setAmountToday(Number(stripLeadingZeros(e.target.value)) || 0)}
               />
             </div>
           </ControlBlock>
 
           <ControlBlock
-            label="Years until you need the money"
-            hint="Longer horizons magnify the effect of inflation."
+            label="Years to Goal"
+            hint="Time horizon for this expenditure."
             valueLabel={`${years} years`}
+            accent="emerald"
           >
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-4 mt-2">
               <input
-                type="range"
-                min={1}
-                max={40}
+                type="range" min={1} max={40} step={1}
                 value={years}
-                onChange={(e) =>
-                  setYears(parseInt(e.target.value || '0') || 0)
-                }
-                className="h-1.5 w-full cursor-pointer rounded-full bg-slate-700 accent-emerald-400"
+                onChange={(e) => setYears(Number(e.target.value))}
+                className="h-2 w-full cursor-pointer rounded-full bg-slate-800 accent-emerald-400"
               />
               <input
                 type="number"
-                min={1}
-                max={50}
-                className="w-20 rounded-lg border border-slate-600 bg-slate-900 px-2 py-1.5 text-sm text-slate-50 outline-none ring-emerald-500/40 focus:border-emerald-400 focus:ring"
-                value={yearsDisplay}
-                onChange={(e) => {
-                  const cleaned = stripLeadingZeros(e.target.value);
-                  if (!cleaned) {
-                    setYears(0);
-                    return;
-                  }
-                  const num = parseInt(cleaned, 10);
-                  setYears(Number.isNaN(num) ? 0 : num);
-                }}
+                className="w-24 rounded-lg border-2 border-slate-700 bg-slate-900 px-3 py-2 text-lg font-bold text-white outline-none focus:border-emerald-500"
+                value={years === 0 ? '' : years}
+                onChange={(e) => setYears(Number(stripLeadingZeros(e.target.value)) || 0)}
               />
             </div>
           </ControlBlock>
 
           <ControlBlock
-            label="Inflation (per year)"
-            hint="Your guess for long-term price increase."
+            label="Annual Inflation Rate (%)"
+            hint="Average yearly price increase (usually 6-7%)."
             valueLabel={`${inflation}% p.a.`}
+            accent="amber"
           >
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-4 mt-2">
               <input
-                type="range"
-                min={3}
-                max={10}
-                step={0.5}
+                type="range" min={1} max={15} step={0.1}
                 value={inflation}
-                onChange={(e) =>
-                  setInflation(parseFloat(e.target.value || '0') || 0)
-                }
-                className="h-1.5 w-full cursor-pointer rounded-full bg-slate-700 accent-amber-400"
+                onChange={(e) => setInflation(parseFloat(e.target.value))}
+                className="h-2 w-full cursor-pointer rounded-full bg-slate-800 accent-amber-400"
               />
               <input
                 type="number"
-                min={0}
-                max={20}
-                step={0.5}
-                className="w-20 rounded-lg border border-slate-600 bg-slate-900 px-2 py-1.5 text-sm text-slate-50 outline-none ring-amber-500/40 focus:border-amber-400 focus:ring"
-                value={inflationDisplay}
-                onChange={(e) => {
-                  const cleaned = stripLeadingZeros(e.target.value);
-                  if (!cleaned) {
-                    setInflation(0);
-                    return;
-                  }
-                  const num = parseFloat(cleaned);
-                  setInflation(Number.isNaN(num) ? 0 : num);
-                }}
+                className="w-24 rounded-lg border-2 border-slate-700 bg-slate-900 px-3 py-2 text-lg font-bold text-white outline-none focus:border-amber-500"
+                value={inflation === 0 ? '' : inflation}
+                onChange={(e) => setInflation(parseFloat(stripLeadingZeros(e.target.value)) || 0)}
               />
             </div>
           </ControlBlock>
         </div>
 
-        {/* Right – explanation */}
-        <div className="space-y-3 rounded-2xl bg-slate-900/70 p-4 ring-1 ring-white/5 md:p-5">
-          <div className="grid gap-3 text-sm md:grid-cols-2">
-            <ResultCard
-              label="Future cost"
-              value={`₹ ${formatNumber(result.futureCost)}`}
-              helper="Amount you’d roughly need in the future to match today’s purchasing power."
-              highlight
+        {/* RIGHT: Summary Cards & Info */}
+        <div className="flex flex-col gap-6">
+          <div className="grid gap-4 sm:grid-cols-2">
+            <ResultCard 
+              label="Future Value" 
+              value={`₹${formatNumber(result.futureCost)}`} 
+              helper="Budget needed later" 
+              highlight 
             />
-            <ResultCard
-              label="Rupee doubling time"
-              value={
-                result.doubleYears === Infinity
-                  ? '—'
-                  : `${result.doubleYears.toFixed(1)} years`
-              }
-              helper="At this inflation, prices roughly double in this many years."
+            <ResultCard 
+              label="Price Doubling" 
+              value={result.doubleYears === Infinity ? '—' : `${result.doubleYears.toFixed(1)} Yrs`} 
+              helper="Time for prices to 2x" 
             />
           </div>
 
-          <div className="rounded-xl bg-slate-950/60 p-3 text-[11px] text-slate-300">
-            <p className="text-xs font-semibold text-sky-300">
-              How to use this with your goals
-            </p>
-            <p className="mt-1 text-slate-300">
-              Take any future goal amount in today’s rupees, plug it in
-              here, and use the future cost in your SIP / lumpsum /
-              goal-planner tools. It keeps your planning consistent with
-              inflation.
-            </p>
+          <div className="flex-1 space-y-4 rounded-2xl bg-slate-900/60 p-6 ring-1 ring-white/5 shadow-inner">
+             <div className="flex items-center gap-2 mb-2">
+                <div className="p-1.5 bg-sky-500/20 rounded-lg text-sky-400">
+                   <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+                </div>
+                <h3 className="text-sm font-bold text-slate-100 uppercase tracking-widest">Purchasing Power Note</h3>
+             </div>
+             <p className="text-sm text-slate-300 leading-relaxed">
+               At <span className="text-amber-400 font-bold">{inflation}%</span> inflation, what costs <span className="text-white font-semibold">₹{formatNumber(amountToday)}</span> today will require <span className="text-emerald-400 font-bold">₹{formatNumber(result.futureCost)}</span> in {years} years just to maintain the same standard of living.
+             </p>
+             <div className="mt-4 p-4 rounded-xl bg-slate-950/50 border border-white/5">
+                <p className="text-xs text-slate-400 italic">
+                  *This calculation assumes inflation is compounded annually. Use this future value as your "Target Amount" in your SIP or Goal planning.
+                </p>
+             </div>
           </div>
+        </div>
+      </div>
+
+      {/* Yearly Projection Table */}
+      <div className="border-t border-white/10 bg-slate-950/20 px-6 py-8 md:px-10">
+        <div className="mb-6">
+          <h3 className="text-xl font-bold text-white">Yearly Price Progression</h3>
+          <p className="text-sm text-slate-400 mt-1">See how much more you'll pay year-over-year.</p>
+        </div>
+        
+        <div className="overflow-x-auto rounded-2xl border border-slate-800 bg-slate-900/60 shadow-inner">
+          <table className="w-full text-left text-sm border-collapse">
+            <thead className="bg-slate-800/50 text-xs font-bold uppercase tracking-widest text-slate-400">
+              <tr>
+                <th className="px-6 py-4 border-b border-slate-700">Year</th>
+                <th className="px-6 py-4 border-b border-slate-700">Estimated Cost</th>
+                <th className="px-6 py-4 border-b border-slate-700 text-right">Value Eroded</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-800">
+              {result.breakdown.map((row) => (
+                <tr key={row.year} className="hover:bg-white/5 transition-colors group">
+                  <td className="px-6 py-4 font-bold text-sky-400">Year {row.year}</td>
+                  <td className="px-6 py-4 text-slate-200 font-semibold">₹{formatNumber(row.futureValue)}</td>
+                  <td className="px-6 py-4 text-right font-medium text-rose-400 group-hover:scale-105 transition-transform origin-right">
+                    - ₹{formatNumber(row.lossOfValue)}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
       </div>
     </section>
   );
 }
 
+// =================================================================
+// 3. UI SUB-COMPONENTS
+// =================================================================
+
 function ControlBlock({
   label,
   hint,
   valueLabel,
+  accent,
   children,
 }: {
   label: string;
   hint: string;
   valueLabel: string;
+  accent: 'emerald' | 'sky' | 'amber';
   children: React.ReactNode;
 }) {
+  const ring =
+    accent === 'emerald' ? 'ring-emerald-500/40' : 
+    accent === 'sky' ? 'ring-sky-500/40' : 'ring-amber-500/40';
+
   return (
-    <div className="space-y-2 rounded-xl bg-slate-950/40 p-3.5 ring-1 ring-sky-500/30">
+    <div className={`space-y-3 rounded-xl bg-slate-950/40 p-5 ring-1 ${ring}`}>
       <div className="flex items-center justify-between gap-3">
         <div>
-          <p className="text-xs font-medium text-slate-100">{label}</p>
-          <p className="text-[11px] text-slate-400">{hint}</p>
+          <p className="text-base font-semibold text-white">{label}</p>
+          <p className="text-sm text-slate-400 leading-snug">{hint}</p>
         </div>
-        <p className="text-[11px] font-medium text-sky-200">
-          {valueLabel}
-        </p>
+        <p className="text-sm font-bold text-sky-300 bg-sky-500/10 px-2 py-1 rounded whitespace-nowrap">{valueLabel}</p>
       </div>
       {children}
     </div>
@@ -244,22 +255,12 @@ function ResultCard({
   highlight?: boolean;
 }) {
   return (
-    <div
-      className={`rounded-xl border px-3 py-3 ${
-        highlight
-          ? 'border-sky-400 bg-sky-500/15 text-sky-50 shadow-sm shadow-sky-500/40'
-          : 'border-slate-700 bg-slate-950/40 text-slate-100'
-      }`}
-    >
-      <p
-        className={`text-[11px] ${
-          highlight ? 'text-sky-100/80' : 'text-slate-400'
-        }`}
-      >
-        {label}
-      </p>
-      <p className="mt-1 text-base font-semibold">{value}</p>
-      <p className="mt-1 text-[10px] text-slate-400">{helper}</p>
+    <div className={`rounded-xl border px-4 py-4 ${
+      highlight ? 'border-emerald-400 bg-emerald-500/15 text-emerald-50 shadow-sm shadow-emerald-500/40' : 'border-slate-700 bg-slate-950/40 text-slate-100'
+    }`}>
+      <p className={`text-sm font-medium ${highlight ? 'text-emerald-200' : 'text-slate-400'}`}>{label}</p>
+      <p className="mt-2 text-xl font-bold">{value}</p>
+      <p className={`mt-1 text-xs ${highlight ? 'text-emerald-100/60' : 'text-slate-500'}`}>{helper}</p>
     </div>
   );
 }

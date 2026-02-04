@@ -19,27 +19,12 @@ interface LumpsumPdfReportProps {
   scenarios: Scenario[];
 }
 
-function formatNumber(num: number | undefined) {
-  if (!num || Number.isNaN(num)) return '0';
-  // Use Indian rupee formatting
-  return num.toLocaleString('en-IN', { maximumFractionDigits: 0 });
-}
+const formatCurrency = (n: number) =>
+  `₹ ${n.toLocaleString('en-IN', { maximumFractionDigits: 0 })}`;
 
-const thStyle: React.CSSProperties = {
-  borderBottom: '1px solid rgba(148,163,184,0.5)',
-  padding: '4px 6px',
-  textAlign: 'left',
-  color: '#cbd5f5',
-  fontWeight: 500,
-};
+const formatPercent = (n: number) => `${n.toFixed(0)}%`;
 
-const tdStyle: React.CSSProperties = {
-  padding: '3px 6px',
-  borderBottom: '1px solid rgba(30,41,59,0.9)',
-  color: '#e5e7eb',
-};
-
-export default function LumpsumPdfReport({
+export const LumpsumPdfReport: React.FC<LumpsumPdfReportProps> = ({
   amount,
   years,
   rate,
@@ -48,643 +33,191 @@ export default function LumpsumPdfReport({
   investedShare,
   returnsShare,
   scenarios,
-}: LumpsumPdfReportProps) {
-  const today = new Date().toLocaleDateString('en-IN', {
+}) => {
+  // --- Safe percentages ------------------------------------------------------
+  const safeGrowthShare =
+    typeof returnsShare === 'number' && Number.isFinite(returnsShare)
+      ? Math.min(Math.max(returnsShare, 0), 100)
+      : 0;
+
+  const safeInvestedShare = 100 - safeGrowthShare;
+
+  // --- Donut geometry --------------------------------------------------------
+  const radius = 52;
+  const strokeWidth = 14;
+  const center = 70;
+
+  const circumferenceRaw = 2 * Math.PI * radius;
+  const circumference = Number.isFinite(circumferenceRaw) ? circumferenceRaw : 0;
+
+  const growthLenRaw = (safeGrowthShare / 100) * circumference;
+  const growthLength = Number.isFinite(growthLenRaw) ? growthLenRaw : 0;
+
+  const baseDashArray = circumference > 0 ? `${circumference} ${circumference}` : '0 0';
+  const growthDashArray = circumference > 0 ? `${growthLength} ${circumference - growthLength}` : '0 0';
+
+  const reportDate = new Date().toLocaleDateString('en-IN', {
     day: '2-digit',
     month: 'short',
     year: 'numeric',
   });
 
-  // Ensure percentages are safe and between 0 and 100
-  const investPct = Math.min(Math.max(investedShare, 0), 100);
-  const growthPct = Math.min(Math.max(returnsShare, 0), 100);
-
-  // --- Donut geometry (SVG based) --------------------------------------------
-  const radius = 52;
-  const strokeWidth = 14;
-  const center = 70; // 52 (radius) + 18 (margin/padding) + 0/2 (stroke-width)
-  const svgSize = center * 2; // 140x140
-
-  // Guard against NaN
-  const circumferenceRaw = 2 * Math.PI * radius;
-  const circumference = Number.isFinite(circumferenceRaw) ? circumferenceRaw : 0;
-
-  // Length for the growth arc (green overlay)
-  const growthLenRaw = (growthPct / 100) * circumference;
-  const growthLength = Number.isFinite(growthLenRaw) ? growthLenRaw : 0;
-
-  // Invested (blue) full ring dasharray (just full circle)
-  const investedDashArray =
-    circumference > 0 ? `${circumference} ${circumference}` : '0 0';
-
-  // Growth arc dasharray (green overlay)
-  const growthDashArray =
-    circumference > 0
-      ? `${growthLength} ${circumference - growthLength}`
-      : '0 0';
-  // ---------------------------------------------------------------------------
-
   return (
     <div
+      className="pdf-page"
       style={{
-        width: '794px', // A4 width at ~96dpi
-        backgroundColor: '#020617',
+        width: '794px',
+        minHeight: '1123px',
+        padding: '32px 40px',
+        boxSizing: 'border-box',
+        background: 'radial-gradient(circle at top, #020617 0, #020617 100%)',
         color: '#e5e7eb',
-        padding: '24px',
-        fontFamily: 'system-ui, -apple-system, BlinkMacSystemFont, sans-serif',
-        fontSize: '11px',
+        fontFamily: '-apple-system,BlinkMacSystemFont,system-ui,Segoe UI,Roboto,sans-serif',
+        fontSize: '12px',
       }}
     >
-      <div
-        className="pdf-page"
+      {/* HEADER (SIP Style) */}
+      <header
         style={{
-          minHeight: '1123px',
-          padding: '16px',
           borderRadius: '16px',
-          background:
-            'radial-gradient(circle at top, #0f172a 0, #020617 60%, #020617 100%)',
-          boxShadow: '0 20px 50px rgba(15,23,42,0.8)',
+          padding: '16px 20px',
+          background: 'linear-gradient(135deg,#020617,#020617)',
+          border: '1px solid rgba(148, 163, 184, 0.4)',
+          marginBottom: '16px',
           display: 'flex',
-          flexDirection: 'column',
-          gap: '16px',
+          justifyContent: 'space-between',
+          alignItems: 'center',
         }}
       >
-        {/* Header */}
-        <div
-          style={{
-            display: 'flex',
-            justifyContent: 'space-between',
-            borderBottom: '1px solid rgba(148,163,184,0.4)',
-            paddingBottom: '8px',
-          }}
-        >
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-            <div style={{ display: 'flex', alignItems: 'baseline', gap: 4 }}>
-              <span
-                style={{
-                  fontSize: '12px',
-                  fontWeight: 700,
-                  color: '#22c55e',
-                }}
-              >
-                Money<span style={{ color: '#38bdf8' }}>Talks</span>
-              </span>
-              <span
-                style={{
-                  fontSize: '9px',
-                  color: '#9ca3af',
-                }}
-              >
-                with SS
-              </span>
-            </div>
-            <p
-              style={{
-                fontSize: '14px',
-                fontWeight: 600,
-                color: '#e5e7eb',
-              }}
-            >
-              Lumpsum Investment Plan
-            </p>
+        <div>
+          <div style={{ fontSize: '11px', letterSpacing: '0.18em', textTransform: 'uppercase', color: '#38bdf8' }}>
+            MoneyTalks <span style={{ color: '#a5b4fc' }}>with SS</span>
           </div>
-          <div style={{ textAlign: 'right', fontSize: '10px' }}>
-            <p style={{ color: '#94a3b8' }}>Report date</p>
-            <p style={{ color: '#e5e7eb', fontWeight: 500 }}>{today}</p>
+          <div style={{ marginTop: '4px', fontSize: '18px', fontWeight: 600 }}>
+            Lumpsum Investment Plan
+          </div>
+          <div style={{ marginTop: '2px', fontSize: '10px', color: '#94a3b8' }}>
+            One-time investment projection – personalised illustration
           </div>
         </div>
+        <div style={{ textAlign: 'right', fontSize: '10px' }}>
+          <div style={{ color: '#94a3b8' }}>Report date</div>
+          <div style={{ fontWeight: 600, color: '#e5e7eb', marginTop: '2px' }}>{reportDate}</div>
+        </div>
+      </header>
 
-        {/* Snapshot */}
-        <div
-          style={{
-            borderRadius: '16px',
-            border: '1px solid rgba(56,189,248,0.6)',
-            background:
-              'linear-gradient(135deg, rgba(15,23,42,0.95), rgba(8,47,73,0.98))',
-            padding: '14px 16px',
-            display: 'flex',
-            justifyContent: 'space-between',
-            gap: '12px',
-          }}
-        >
-          <div style={{ maxWidth: '60%' }}>
-            <p
-              style={{
-                fontSize: '10px',
-                color: '#7dd3fc',
-                textTransform: 'uppercase',
-                letterSpacing: '0.08em',
-              }}
-            >
-              Lumpsum snapshot
-            </p>
-            <p
-              style={{
-                fontSize: '13px',
-                fontWeight: 600,
-                color: '#f9fafb',
-                marginTop: '4px',
-              }}
-            >
-              One-time investment of ₹ {formatNumber(amount)} for {years} years
-            </p>
-            <p
-              style={{
-                fontSize: '10px',
-                color: '#cbd5f5',
-                marginTop: '2px',
-              }}
-            >
-              At an expected return of {rate}% per year.
-            </p>
-
-            <div style={{ marginTop: '8px', fontSize: '10px' }}>
-              <p>
-                Principal invested:{' '}
-                <span style={{ fontWeight: 500 }}>
-                  ₹ {formatNumber(amount)}
-                </span>
-              </p>
-              <p>
-                Estimated future value:{' '}
-                <span style={{ fontWeight: 500 }}>
-                  ₹ {formatNumber(corpus)}
-                </span>
-              </p>
-              <p>
-                Approximate growth / returns:{' '}
-                <span style={{ fontWeight: 500 }}>
-                  ₹ {formatNumber(growth)}
-                </span>
-              </p>
-            </div>
-          </div>
-
-          <div
-            style={{
-              minWidth: '40%',
-              textAlign: 'right',
-              display: 'flex',
-              flexDirection: 'column',
-              justifyContent: 'space-between',
-            }}
-          >
+      {/* TOP SUMMARY (SIP Style Grid) */}
+      <section style={{ display: 'grid', gridTemplateColumns: '1.6fr 1.4fr', gap: '16px', marginBottom: '16px' }}>
+        <div style={{ borderRadius: '16px', padding: '14px 16px', background: 'rgba(15,23,42,0.95)', border: '1px solid rgba(148,163,184,0.35)' }}>
+          <div style={{ fontSize: '11px', fontWeight: 600, marginBottom: '6px' }}>Lumpsum Details</div>
+          <div style={{ fontSize: '10px', color: '#9ca3af', marginBottom: '8px' }}>Assumptions for this growth projection.</div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2,minmax(0,1fr))', gap: '8px', fontSize: '11px' }}>
             <div>
-              <p
-                style={{
-                  fontSize: '10px',
-                  color: '#bae6fd',
-                  textTransform: 'uppercase',
-                  letterSpacing: '0.08em',
-                }}
-              >
-                Projected value
-              </p>
-              <p
-                style={{
-                  fontSize: '16px',
-                  fontWeight: 700,
-                  color: '#7dd3fc',
-                }}
-              >
-                ₹ {formatNumber(corpus)}
-              </p>
-              <p
-                style={{
-                  fontSize: '9px',
-                  color: '#9ca3af',
-                }}
-              >
-                After {years} years at {rate}% p.a.
-              </p>
+              <div style={{ color: '#9ca3af' }}>Initial Investment</div>
+              <div style={{ fontWeight: 600, color: '#a5b4fc' }}>{formatCurrency(amount)}</div>
+            </div>
+            <div>
+              <div style={{ color: '#9ca3af' }}>Time Horizon</div>
+              <div style={{ fontWeight: 600, color: '#a5b4fc' }}>{years} years</div>
+            </div>
+            <div>
+              <div style={{ color: '#9ca3af' }}>Expected Return</div>
+              <div style={{ fontWeight: 600, color: '#22c55e' }}>{rate}% p.a.</div>
             </div>
           </div>
         </div>
 
-        {/* Scenario comparison */}
-        <div
-          style={{
-            borderRadius: '12px',
-            border: '1px solid rgba(148,163,184,0.4)',
-            background:
-              'linear-gradient(135deg, rgba(15,23,42,0.97), rgba(15,23,42,0.9))',
-            padding: '10px 12px',
-            display: 'flex',
-            flexDirection: 'column',
-            gap: '6px',
-          }}
-        >
-          <div
-            style={{
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'baseline',
-            }}
-          >
-            <p
-              style={{
-                fontSize: '11px',
-                fontWeight: 600,
-                color: '#e5e7eb',
-              }}
-            >
-              Scenario comparison
-            </p>
-            <p
-              style={{
-                fontSize: '9px',
-                color: '#9ca3af',
-              }}
-            >
-              These scenarios show how the final value changes for slightly lower /
-              higher returns.
-            </p>
+        <div style={{ borderRadius: '16px', padding: '14px 16px', background: 'linear-gradient(135deg,rgba(16,185,129,0.18),rgba(6,182,212,0.12))', border: '1px solid rgba(16,185,129,0.45)' }}>
+          <div style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.12em', color: '#6ee7b7', marginBottom: '4px' }}>
+            Projected Value
+          </div>
+          <div style={{ fontSize: '20px', fontWeight: 700, color: '#bbf7d0' }}>{formatCurrency(corpus)}</div>
+          <div style={{ fontSize: '10px', color: '#e5e7eb', marginTop: '4px' }}>
+            Estimated value after {years} years based on {rate}% annual growth.
+          </div>
+        </div>
+      </section>
+
+      {/* VISUAL BREAKDOWN (Donut Style) */}
+      <section style={{ borderRadius: '16px', padding: '16px 18px', background: 'radial-gradient(circle at top left,#020617,#020617)', border: '1px solid rgba(148,163,184,0.35)', marginBottom: '16px' }}>
+        <div style={{ fontSize: '12px', fontWeight: 600, marginBottom: '4px' }}>Visual breakdown — principal vs growth</div>
+        <div style={{ fontSize: '10px', color: '#9ca3af', marginBottom: '10px' }}>
+          One part shows your original capital, and the other shows what compounding adds on top.
+        </div>
+
+        <div style={{ display: 'grid', gridTemplateColumns: 'auto 1fr', gap: '24px', alignItems: 'center' }}>
+          <div style={{ position: 'relative', width: 140, height: 140 }}>
+            <svg width={140} height={140} viewBox="0 0 140 140" style={{ transform: 'rotate(-90deg)' }}>
+              <circle cx={center} cy={center} r={radius} fill="none" stroke="#0f172a" strokeWidth={strokeWidth} />
+              <circle cx={center} cy={center} r={radius} fill="none" stroke="#0ea5e9" strokeWidth={strokeWidth} strokeDasharray={baseDashArray} strokeDashoffset={0} strokeLinecap="round" />
+              <circle cx={center} cy={center} r={radius} fill="none" stroke="#22c55e" strokeWidth={strokeWidth} strokeDasharray={growthDashArray} strokeDashoffset={0} strokeLinecap="round" />
+            </svg>
+            <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center', pointerEvents: 'none' }}>
+              <div style={{ fontSize: '10px', color: '#9ca3af' }}>Total Value</div>
+              <div style={{ fontSize: '13px', fontWeight: 600 }}>{formatCurrency(corpus)}</div>
+            </div>
           </div>
 
-          <table
-            style={{
-              width: '100%',
-              borderCollapse: 'collapse',
-              fontSize: '9px',
-              marginTop: '4px',
-            }}
-          >
-            <thead>
-              <tr>
-                <th style={thStyle}>Scenario</th>
-                <th style={thStyle}>Return (% p.a.)</th>
-                <th style={thStyle}>Projected value (₹)</th>
+          <div style={{ fontSize: '11px' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 12 }}>
+              <LegendRow color="#0ea5e9" label="Initial Investment" amount={amount} share={safeInvestedShare} />
+              <LegendRow color="#22c55e" label="Growth / Returns" amount={growth} share={safeGrowthShare} />
+            </div>
+            <div style={{ fontSize: '10px', color: '#9ca3af', lineHeight: '1.4' }}>
+              The blue portion represents your initial investment capital. The green portion is the wealth created through market returns over the chosen period.
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* SCENARIO TABLE (SIP Style) */}
+      <section style={{ borderRadius: '16px', padding: '14px 16px', background: 'rgba(15,23,42,0.95)', border: '1px solid rgba(148,163,184,0.35)', marginBottom: '16px' }}>
+        <div style={{ fontSize: '12px', fontWeight: 600, marginBottom: '4px' }}>Scenario Comparison</div>
+        <div style={{ fontSize: '10px', color: '#9ca3af', marginBottom: '8px' }}>
+          See how your final wealth changes if returns are slightly lower or higher than expected.
+        </div>
+        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '10px' }}>
+          <thead>
+            <tr>
+              <th style={{ textAlign: 'left', padding: '8px', borderBottom: '1px solid rgba(51,65,85,0.9)', color: '#9ca3af' }}>Scenario</th>
+              <th style={{ textAlign: 'left', padding: '8px', borderBottom: '1px solid rgba(51,65,85,0.9)', color: '#9ca3af' }}>Return (% p.a.)</th>
+              <th style={{ textAlign: 'left', padding: '8px', borderBottom: '1px solid rgba(51,65,85,0.9)', color: '#9ca3af' }}>Projected Value</th>
+            </tr>
+          </thead>
+          <tbody>
+            {scenarios.map((s, index) => (
+              <tr key={index}>
+                <td style={{ padding: '8px', borderBottom: '1px solid rgba(31,41,55,0.85)' }}>{s.label}</td>
+                <td style={{ padding: '8px', borderBottom: '1px solid rgba(31,41,55,0.85)', color: '#a5b4fc' }}>{s.rate}%</td>
+                <td style={{ padding: '8px', borderBottom: '1px solid rgba(31,41,55,0.85)', color: '#6ee7b7', fontWeight: 600 }}>{formatCurrency(s.corpus)}</td>
               </tr>
-            </thead>
-            <tbody>
-              {scenarios.map((s) => (
-                <tr key={s.label}>
-                  <td style={tdStyle}>{s.label}</td>
-                  <td style={tdStyle}>{s.rate}</td>
-                  <td style={tdStyle}>₹ {formatNumber(s.corpus)}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+            ))}
+          </tbody>
+        </table>
+      </section>
 
-        {/* Visual breakdown — principal vs growth (FIXED & IMPROVED) */}
-        <div
-          style={{
-            borderRadius: '12px',
-            border: '1px solid rgba(56,189,248,0.7)',
-            background:
-              'linear-gradient(135deg, rgba(15,23,42,0.98), rgba(8,47,73,0.98))',
-            padding: '12px 14px',
-            display: 'flex',
-            flexDirection: 'column',
-            gap: '10px',
-          }}
-        >
-          <p
-            style={{
-              fontSize: '11px',
-              fontWeight: 600,
-              color: '#e0f2fe',
-            }}
-          >
-            Visual breakdown — principal vs growth
-          </p>
-          <p
-            style={{
-              fontSize: '9px',
-              color: '#bae6fd',
-            }}
-          >
-            This mirrors the split view in the Lumpsum calculator. One part shows your
-            original capital, the other shows what compounding adds on top.
-          </p>
-
-          <div
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '26px',
-              marginTop: '6px',
-            }}
-          >
-            {/* Donut chart – using SVG for reliable rendering */}
-            <div
-              style={{
-                position: 'relative',
-                width: `${svgSize}px`,
-                height: `${svgSize}px`,
-              }}
-            >
-              <svg
-                width={svgSize}
-                height={svgSize}
-                viewBox={`0 0 ${svgSize} ${svgSize}`}
-                style={{ transform: 'rotate(-90deg)' }}
-              >
-                {/* base ring (dark background) */}
-                <circle
-                  cx={center}
-                  cy={center}
-                  r={radius}
-                  fill="none"
-                  stroke="#0f172a"
-                  strokeWidth={strokeWidth}
-                />
-                {/* invested (blue) full ring – background/main segment */}
-                <circle
-                  cx={center}
-                  cy={center}
-                  r={radius}
-                  fill="none"
-                  stroke="#38bdf8"
-                  strokeWidth={strokeWidth}
-                  strokeDasharray={investedDashArray}
-                  strokeDashoffset={0}
-                  strokeLinecap="round"
-                />
-                {/* growth overlay (green) */}
-                <circle
-                  cx={center}
-                  cy={center}
-                  r={radius}
-                  fill="none"
-                  stroke="#22c55e"
-                  strokeWidth={strokeWidth}
-                  strokeDasharray={growthDashArray}
-                  strokeDashoffset={0}
-                  strokeLinecap="round"
-                />
-              </svg>
-
-              {/* Center label (not rotated) */}
-              <div
-                style={{
-                  position: 'absolute',
-                  inset: 0,
-                  display: 'flex',
-                  flexDirection: 'column',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  textAlign: 'center',
-                  pointerEvents: 'none',
-                }}
-              >
-                <span
-                  style={{
-                    fontSize: '9px',
-                    color: '#9ca3af',
-                  }}
-                >
-                  Final value
-                </span>
-                <span
-                  style={{
-                    fontSize: '13px', // Slightly larger than before
-                    fontWeight: 600,
-                    color: '#e5e7eb',
-                  }}
-                >
-                  ₹ {formatNumber(corpus)}
-                </span>
-                <span
-                  style={{
-                    marginTop: '4px',
-                    fontSize: '9px',
-                    color: '#cbd5f5',
-                  }}
-                >
-                  {investPct.toFixed(0)}% principal
-                </span>
-                <span
-                  style={{
-                    fontSize: '9px',
-                    color: '#cbd5f5',
-                  }}
-                >
-                  {growthPct.toFixed(0)}% growth
-                </span>
-              </div>
-            </div>
-
-            {/* Legend / stats */}
-            <div
-              style={{
-                flex: 1,
-                display: 'flex',
-                flexDirection: 'column',
-                gap: '8px', // Increased gap for clarity
-                fontSize: '10px',
-              }}
-            >
-              <LegendItem
-                color="#38bdf8"
-                label="You invest (principal)"
-                value={`₹ ${formatNumber(amount)}`}
-                percent={`${investPct.toFixed(0)}% of final value`}
-              />
-              <LegendItem
-                color="#22c55e"
-                label="Growth / returns"
-                value={`₹ ${formatNumber(growth)}`}
-                percent={`${growthPct.toFixed(0)}% of final value`}
-              />
-              <LegendItem
-                color="#a855f7"
-                label="Total value"
-                value={`₹ ${formatNumber(corpus)}`}
-                percent={'100% of final value'}
-              />
-            </div>
-          </div>
-
-          <p
-            style={{
-              fontSize: '9px',
-              color: '#cbd5f5',
-              marginTop: '4px',
-            }}
-          >
-            The blue slice is the money you put in. The green slice is the extra wealth
-            created by compounding at the assumed return. The longer you give the money, the more powerful
-            this growth portion becomes.
-          </p>
-        </div>
-
-        {/* Explanation & detailed guidance */}
-        <div
-          style={{
-            borderRadius: '12px',
-            border: '1px solid rgba(148,163,184,0.5)',
-            background: 'rgba(15,23,42,0.95)',
-            padding: '10px 12px',
-            display: 'flex',
-            flexDirection: 'column',
-            gap: '4px',
-          }}
-        >
-          <p
-            style={{
-              fontSize: '11px',
-              fontWeight: 600,
-              color: '#e5e7eb',
-            }}
-          >
-            How to read this lumpsum projection
-          </p>
-
-          <p
-            style={{
-              fontSize: '9px',
-              color: '#d1d5db',
-            }}
-          >
-            This projection assumes you invest{' '}
-            <span style={{ fontWeight: 500 }}>
-              ₹ {formatNumber(amount)} once and stay invested for {years} years
-            </span>{' '}
-            without withdrawing, and that your investment earns an average of{' '}
-            <span style={{ fontWeight: 500 }}>{rate}% per year</span>. Under these
-            assumptions, the investment could grow to about{' '}
-            <span style={{ fontWeight: 500 }}>
-              ₹ {formatNumber(corpus)} at the end of the period.
-            </span>
-          </p>
-
-          <p
-            style={{
-              fontSize: '9px',
-              color: '#d1d5db',
-            }}
-          >
-            Out of this, your original capital is{' '}
-            <span style={{ fontWeight: 500 }}>
-              ₹ {formatNumber(amount)} ({investPct.toFixed(0)}% of the final value)
-            </span>
-            , while the remaining{' '}
-            <span style={{ fontWeight: 500 }}>
-              ₹ {formatNumber(growth)} ({growthPct.toFixed(0)}%)
-            </span>{' '}
-            comes from compounding. The longer you give the money, the more powerful
-            this growth portion becomes.
-          </p>
-
-          <p
-            style={{
-              fontSize: '9px',
-              color: '#d1d5db',
-            }}
-          >
-            Actual market returns will be uneven and may be higher or lower than{' '}
-            {rate}% in any given year. This report is a planning guide, not a promise.
-            Large one-time investments should match your risk profile, time horizon and
-            liquidity needs.
-          </p>
-
-          <p
-            style={{
-              fontSize: '9px',
-              color: '#d1d5db',
-            }}
-          >
-            You can reduce risk by:
-          </p>
-          <ul
-            style={{
-              fontSize: '9px',
-              color: '#d1d5db',
-              paddingLeft: '14px',
-              marginTop: '0px',
-            }}
-          >
-            <li>Spreading your lumpsum across suitable funds instead of one product.</li>
-            <li>Avoiding panic selling during short-term market falls.</li>
-            <li>
-              Reviewing this plan whenever your goal, time horizon or risk comfort
-              changes.
-            </li>
-          </ul>
-
-          <p
-            style={{
-              fontSize: '9px',
-              color: '#9ca3af',
-              marginTop: '4px',
-            }}
-          >
-            This report is for educational use only. It is not individual investment,
-            tax or legal advice.
-          </p>
-          <p
-            style={{
-              fontSize: '9px',
-              color: '#cbd5f5',
-            }}
-          >
-            For personalised guidance, you can reach out at:{' '}
-            <span style={{ fontWeight: 500 }}>smartspendsclub@gmail.com</span>
-          </p>
-        </div>
-      </div>
+      {/* FOOTER (SIP Style) */}
+      <section style={{ borderRadius: '16px', padding: '12px 14px', background: 'rgba(15,23,42,0.95)', border: '1px solid rgba(55,65,81,0.9)', fontSize: '9px', color: '#9ca3af', lineHeight: '1.5' }}>
+        <p>
+          This is an educational illustration, not a promise of guaranteed returns. Actual investment performance varies based on market conditions. 
+          Lumpsum investing requires a long-term perspective to navigate market volatility. Review your plan regularly.
+        </p>
+      </section>
     </div>
   );
-}
+};
 
-function LegendItem({
-  color,
-  label,
-  value,
-  percent,
-}: {
-  color: string;
-  label: string;
-  value: string;
-  percent: string;
-}) {
+function LegendRow({ color, label, amount, share }: { color: string; label: string; amount: number; share: number }) {
   return (
-    <div
-      style={{
-        display: 'flex',
-        alignItems: 'flex-start',
-        gap: '6px',
-      }}
-    >
-      <span
-        style={{
-          width: '10px',
-          height: '10px',
-          borderRadius: '999px',
-          backgroundColor: color,
-          marginTop: '3px',
-        }}
-      />
+    <div style={{ display: 'flex', alignItems: 'flex-start', gap: 8 }}>
+      <span style={{ width: 8, height: 8, borderRadius: '50%', backgroundColor: color, marginTop: 4 }} />
       <div>
-        <p
-          style={{
-            fontSize: '10px',
-            fontWeight: 600,
-            color: '#e5e7eb',
-          }}
-        >
-          {label}
-        </p>
-        <p
-          style={{
-            fontSize: '9px',
-            color: '#d1d5db',
-          }}
-        >
-          {value}
-        </p>
-        <p
-          style={{
-            fontSize: '9px',
-            color: '#9ca3af',
-          }}
-        >
-          {percent}
-        </p>
+        <div style={{ fontSize: '11px', fontWeight: 600 }}>{label}</div>
+        <div style={{ fontSize: '10px', color: '#e5e7eb' }}>{formatCurrency(amount)}</div>
+        <div style={{ fontSize: '9px', color: '#9ca3af' }}>{formatPercent(share)} of final value</div>
       </div>
     </div>
   );
 }
+
+export default LumpsumPdfReport;

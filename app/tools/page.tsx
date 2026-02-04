@@ -61,7 +61,7 @@ const tools: Tool[] = [
   },
   {
     slug: "networth",
-    title: "Net Worth Snapshot",
+    title: "Net Worth Calculator",
     description:
       "Add up what you own and what you owe to get a calm, planner-style view of your current net worth and asset mix.",
     status: "Available",
@@ -73,7 +73,7 @@ const tools: Tool[] = [
     description:
       "Combine expenses, existing corpus and monthly investing capacity to get a directional timeline for financial independence.",
     status: "Available",
-    tag: "Beta",
+    tag: "Live",
   },
   {
     slug: "tax",

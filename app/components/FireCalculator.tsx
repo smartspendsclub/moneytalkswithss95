@@ -89,9 +89,70 @@ export default function FireCalculator() {
 
   const reached =
     sim.yearsToFire !== Infinity && !Number.isNaN(sim.yearsToFire);
+  // FIRE tiers
+  const leanExpenses = monthlyExpenses * 0.7;
+  const fatExpenses = monthlyExpenses * 2;
+
+  const leanSim = simulateFire(
+    leanExpenses,
+    currentCorpus,
+    monthlyInvest,
+    returnRate,
+    withdrawalRate
+  );
+
+  const fatSim = simulateFire(
+    fatExpenses,
+    currentCorpus,
+    monthlyInvest,
+    returnRate,
+    withdrawalRate
+  );
+
+  // ======================================================
+// FIRE Acceleration Insights
+// ======================================================
+
+const baseYears = sim.yearsToFire;
+
+// 10% more investment
+const investBoostAmount = monthlyInvest * 0.1;
+const investBoostSim = simulateFire(
+  monthlyExpenses,
+  currentCorpus,
+  monthlyInvest * 1.1,
+  returnRate,
+  withdrawalRate
+);
+
+const investYearsFaster =
+  baseYears !== Infinity && investBoostSim.yearsToFire !== Infinity
+    ? baseYears - investBoostSim.yearsToFire
+    : 0;
+
+// 10% expense reduction
+const reducedExpenseSim = simulateFire(
+  monthlyExpenses * 0.9,
+  currentCorpus,
+  monthlyInvest,
+  returnRate,
+  withdrawalRate
+);
+
+const expenseYearsFaster =
+  baseYears !== Infinity && reducedExpenseSim.yearsToFire !== Infinity
+    ? baseYears - reducedExpenseSim.yearsToFire
+    : 0;
+
+// Show only if meaningful
+const showAcceleration =
+  baseYears > 5 &&
+  (investYearsFaster > 0.3 || expenseYearsFaster > 0.3);
+
+
 
   return (
-    <section className="overflow-hidden rounded-3xl border border-slate-200 bg-gradient-to-br from-slate-900 via-slate-950 to-slate-900 text-slate-50 shadow-xl shadow-slate-900/30 md:mx-2 lg:mx-4">
+    <section className="overflow-hidden rounded-3xl border border-slate-200 bg-gradient-to-br from-slate-900 via-slate-950 to-slate-900 text-slate-50 text-base shadow-xl shadow-slate-900/30 md:mx-2 lg:mx-4">
       {/* Header */}
       <div className="flex flex-wrap items-center justify-between gap-3 border-b border-white/10 px-5 py-4 md:px-8">
         <div className="space-y-1">
@@ -157,20 +218,71 @@ export default function FireCalculator() {
 
         {/* Results */}
         <div className="space-y-4 rounded-2xl bg-slate-900/70 p-4 ring-1 ring-white/5 md:p-5">
-          <Result
-            label="Estimated years to FIRE"
-            value={
-              reached
-                ? `${sim.yearsToFire.toFixed(1)} years`
-                : 'Not reached within 60 years'
-            }
-            highlight
-          />
+          <p className="text-sm font-semibold text-purple-300">
+            FIRE Milestones
+          </p>
+
+          <div className="grid gap-4 md:grid-cols-3">
+            {/* Lean FIRE */}
+            <MilestoneCard
+              title="Lean FIRE"
+              subtitle="Essentials covered"
+              years={leanSim.yearsToFire}
+              target={leanSim.targetCorpus}
+            />
+
+            {/* Standard FIRE */}
+            <MilestoneCard
+              title="Standard FIRE"
+              subtitle="Current lifestyle"
+              years={sim.yearsToFire}
+              target={sim.targetCorpus}
+              highlight
+            />
+
+            {/* Fat FIRE */}
+            <MilestoneCard
+              title="Fat FIRE"
+              subtitle="Luxury freedom"
+              years={fatSim.yearsToFire}
+              target={fatSim.targetCorpus}
+            />
+          </div>
 
           <Result
             label="Annual expenses"
             value={`₹ ${formatNumber(annualExpenses)}`}
           />
+
+          {/* How to reach FIRE faster */}
+          {showAcceleration && (
+            <div className="space-y-3 rounded-xl bg-purple-500/10 p-4 ring-1 ring-purple-400/30">
+              <p className="text-sm font-semibold text-purple-300">
+                How to reach FIRE faster
+              </p>
+
+              <div className="space-y-1 text-sm text-slate-300">
+                {investYearsFaster > 0.3 && (
+                  <p>
+                    • Invest ₹ {formatNumber(investBoostAmount)} more/month →{" "}
+                    <span className="font-semibold text-purple-200">
+                      {investYearsFaster.toFixed(1)} years faster
+                    </span>
+                  </p>
+                )}
+
+                {expenseYearsFaster > 0.3 && (
+                  <p>
+                    • Reduce expenses by 10% →{" "}
+                    <span className="font-semibold text-purple-200">
+                      {expenseYearsFaster.toFixed(1)} years faster
+                    </span>
+                  </p>
+                )}
+              </div>
+            </div>
+          )}
+
 
           {/* FIRE Explanation */}
           <div className="space-y-3 rounded-xl bg-slate-950/60 p-4">
@@ -178,17 +290,22 @@ export default function FireCalculator() {
               Your FIRE number explained
             </p>
             <p className="text-[11px] text-slate-400">
-              At a {withdrawalRate}% withdrawal rate, your portfolio typically
-              needs to be about{' '}
-              <span className="font-semibold text-slate-100">
-                {fireMultiple}×
-              </span>{' '}
-              your annual expenses.
+              <span className="font-semibold text-purple-200">Lean FIRE</span> focuses on covering essential living costs with minimal lifestyle upgrades.
+              <br />
+              <span className="font-semibold text-purple-200">Standard FIRE</span> maintains your current lifestyle comfortably.
+              <br />
+              <span className="font-semibold text-purple-200">Fat FIRE</span> allows luxury, flexibility, and higher discretionary spending.
             </p>
+
+            <p className="mt-2 text-sm text-slate-400 leading-relaxed">
+              At a {withdrawalRate}% withdrawal rate, your portfolio typically needs to be about{' '}
+              <span className="font-semibold text-slate-100">{fireMultiple}×</span> your annual expenses.
+            </p>
+
 
             {/* Progress */}
             <div className="space-y-2">
-              <div className="flex justify-between text-[11px] text-slate-300">
+              <div className="flex justify-between text-sm text-slate-300">
                 <span>Progress to FIRE</span>
                 <span className="font-medium text-purple-200">
                   {fireProgress.toFixed(1)}%
@@ -200,7 +317,7 @@ export default function FireCalculator() {
                   style={{ width: `${fireProgress}%` }}
                 />
               </div>
-              <p className="text-[10px] text-slate-400">
+              <p className="text-sm text-slate-400">
                 ₹ {formatNumber(currentCorpus)} of ₹{' '}
                 {formatNumber(sim.targetCorpus)}
               </p>
@@ -235,7 +352,7 @@ function Control({
 }) {
   return (
     <div className="space-y-1 rounded-xl bg-slate-950/40 p-3 ring-1 ring-purple-500/30">
-      <div className="flex justify-between text-[11px] text-slate-300">
+      <div className="flex justify-between text-sm text-slate-300">
         <span>{label}</span>
         <span className="text-purple-200">
           {isPercent ? `${value}%` : `₹ ${formatNumber(value)}`}
@@ -251,7 +368,7 @@ function Control({
             ) || 0
           )
         }
-        className="w-full rounded-lg border border-slate-600 bg-slate-900 px-2 py-1.5 text-xs text-slate-50 outline-none focus:border-purple-400"
+        className="w-full rounded-lg border border-slate-600 bg-slate-900 px-3 py-2 text-xs text-slate-50 outline-none focus:border-purple-400"
       />
     </div>
   );
@@ -276,6 +393,55 @@ function Result({
     >
       <p className="text-[11px] text-slate-400">{label}</p>
       <p className="mt-1 text-base font-semibold">{value}</p>
+    </div>
+  );
+}
+
+function MilestoneCard({
+  title,
+  subtitle,
+  years,
+  target,
+  highlight,
+}: {
+  title: string;
+  subtitle: string;
+  years: number;
+  target: number;
+  highlight?: boolean;
+}) {
+  const reached =
+    years !== Infinity && !Number.isNaN(years);
+
+  return (
+    <div
+      className={`rounded-2xl p-4 ring-1 ${
+        highlight
+          ? 'bg-purple-500/15 ring-purple-400/40'
+          : 'bg-slate-950/60 ring-white/5'
+      }`}
+    >
+      <div className="flex justify-between items-start">
+        <div>
+          <p className="text-base font-semibold text-slate-100">
+            {title}
+          </p>
+          <p className="text-sm text-slate-400">
+            {subtitle}
+          </p>
+        </div>
+
+        <div className="text-right">
+          <p className="text-base font-semibold text-slate-100">
+            {reached
+              ? `${years.toFixed(1)} yrs`
+              : 'Not reached'}
+          </p>
+          <p className="text-sm text-slate-400">
+            ₹ {formatNumber(target)}
+          </p>
+        </div>
+      </div>
     </div>
   );
 }
