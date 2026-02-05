@@ -3,7 +3,7 @@ import { fccsArticles, categoryColorMap } from "@content/epm/fccs";
 
 export default function FCCSCatalogPage() {
   return (
-    <div className="min-h-screen bg-linear-to-br from-[#020617] to-[#020617]/90 text-white px-8 py-20">
+    <div className="min-h-screen bg-gradient-to-br from-[#020617] to-[#020617]/90 text-white px-8 py-20">
       <div className="max-w-6xl mx-auto">
 
         <Link href="/blog/epm/architecture" className="text-sky-400 text-sm hover:underline">
