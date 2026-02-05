@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { Suspense } from "react";
 import SipCalculator from "@/components/SipCalculator";
 
 export const metadata = {
@@ -33,7 +34,9 @@ export default function SipPage() {
         </header>
 
         {/* Tool */}
-        <SipCalculator />
+        <Suspense fallback={<div>Loading...</div>}>
+          <SipCalculator />
+        </Suspense>
       </div>
     </main>
   );
